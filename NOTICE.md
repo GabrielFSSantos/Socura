@@ -1,6 +1,6 @@
 # Avisos e atribuição
 
-## Social Unfollowers
+## Socura
 
 Copyright (c) 2026 Gabriel F. S. Santos — modificações e manutenção deste repositório.
 

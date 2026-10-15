@@ -7,12 +7,12 @@
 | D-003 | — | Índice de seguidores por `id` + `username` normalizado | Reduz falsos positivos quando `pk` / `pk_id` divergem | Só comparar por `pk` |
 | D-004 | — | Abortar scan se lista de seguidores incompleta | Índice parcial marcaria seguidores reais como não-seguidores | Continuar com aviso |
 | D-005 | — | `scanIncomplete` bloqueia unfollow em massa | Evita ações com dados errados após interrupção | Permitir unfollow sempre |
-| D-006 | 2026 | Fork com visão **Social Unfollowers** (Instagram hoje; X.com no roadmap) | Mesmo produto conceitual em várias redes | Renomear repo imediatamente |
+| D-006 | 2026 | Fork com visão **Socura** (Instagram + X.com) | Mesmo produto conceitual em várias redes | Renomear repo imediatamente |
 | D-007 | — | Documentação só em `.md` no repo (sem PDFs de referência) | Foco em código e operação | Pasta `references/pdfs` como em outros labs |
 | D-008 | — | Harness do agente fora do repo de produto | Meta-workspace dedicado; repo sem paths de harness externo | `AGENTS.md` na raiz do fork |
 | D-009 | 2026 | UI e documentação em **PT-BR**; código e identificadores em **inglês** | Fork orientado a usuários e devs BR; manter alinhamento com convenções de código | i18n multilíngue (EN/ES); README bilíngue upstream |
-| D-010 | 2026 | Produto canônico em **GabrielFSSantos/Social-Unfollowers** e Pages próprio | Independência de distribuição; fork com créditos explícitos | Continuar apontando Pages upstream; repo novo sem rede de fork |
+| D-010 | 2026 | Produto canônico em **GabrielFSSantos/Socura** e Pages próprio | Independência de distribuição; fork com créditos explícitos | Continuar apontando Pages upstream; repo novo sem rede de fork |
 | D-011 | 2026 | X.com MVP via **REST 1.1 interno** (`/i/api/1.1/`) com sessão web | Contrato mais estável que GraphQL com queryId volátil | Só GraphQL; API oficial paga |
 | D-012 | 2026 | `localStorage` com prefixo `iu_ig_` / `iu_x_`; fallback `iu_*` só no Instagram | Evita colisão conceitual; migração suave IG | Prefixo único global |
 
-Ao registrar nova decisão, acrescente uma linha e, se necessário, atualize o capítulo correspondente em `documentation/`.
+Ao registrar nova decisão, acrescente uma linha e atualize [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md) ou [PLATAFORMAS/](PLATAFORMAS/) se aplicável.

@@ -167,6 +167,10 @@ export function unfollowUserUrlGenerator(idToUnfollow: string): string {
   return `https://www.instagram.com/web/friendships/${idToUnfollow}/unfollow/`;
 }
 
+export function removeFollowerUserUrlGenerator(targetUserId: string): string {
+  return `https://www.instagram.com/web/friendships/${targetUserId}/remove_follower/`;
+}
+
 export type FriendshipsListKind = 'following' | 'followers';
 
 /**

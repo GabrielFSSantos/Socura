@@ -1,3 +1,4 @@
+import { AuditMode, BulkQueueAction } from "./audit-mode";
 import { UserNode } from "./user";
 import { ScanningTab } from "./scanning-tab";
 import { ScanningFilter } from "./scanning-filter";
@@ -5,7 +6,8 @@ import { UnfollowLogEntry } from "./unfollow-log-entry";
 import { UnfollowFilter } from "./unfollow-filter";
 
 type ScanningState = {
-  readonly status: 'scanning';
+  readonly status: "scanning";
+  readonly auditMode: AuditMode;
   readonly page: number;
   readonly currentTab: ScanningTab;
   readonly searchTerm: string;
@@ -20,7 +22,8 @@ type ScanningState = {
 };
 
 type UnfollowingState = {
-  readonly status: 'unfollowing';
+  readonly status: "unfollowing";
+  readonly queueAction: BulkQueueAction;
   readonly searchTerm: string;
   readonly percentage: number;
   readonly selectedResults: readonly UserNode[];

@@ -126,11 +126,17 @@ export async function fetchXListGraphQL(
   });
   if (!res.ok) {
     const retryable = res.status === 429 || res.status >= 500;
+    const kindError =
+      res.status === 401 || res.status === 403
+        ? "session"
+        : res.status === 429
+          ? "rate_limit"
+          : "api";
     throw new PlatformApiError(
       res.status,
       `X GraphQL HTTP ${res.status} for ${kind}`,
       retryable,
-      res.status === 429 ? "rate_limit" : "api",
+      kindError,
     );
   }
   const data = (await res.json()) as GraphqlJson;

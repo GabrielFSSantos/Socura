@@ -12,9 +12,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Fail if public/index.html was modified
+      - name: Fail if public/index.html changed without shell
         run: |
-          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -qx 'public/index.html'; then
-            echo "::error file=public/index.html::public/index.html must not be modified in a PR."
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || true)
+          index_changed=false
+          shell_changed=false
+          echo "$changed" | grep -qx 'public/index.html' && index_changed=true
+          echo "$changed" | grep -qx 'public/index.shell.html' && shell_changed=true
+          if [ "$index_changed" = true ] && [ "$shell_changed" = false ]; then
+            echo "::error file=public/index.html::Edite public/index.shell.html e rode npm run build para regenerar index.html — não altere o bundle em PR."
             exit 1
           fi

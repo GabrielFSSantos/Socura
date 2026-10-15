@@ -5,6 +5,17 @@ const messages = {
   launchDescription:
     "Escaneie quem você segue, revise sinais de risco, proteja contas na lista branca e aja apenas sobre os usuários selecionados (Instagram ou X).",
   runScan: "Iniciar escaneamento",
+  auditModeNonFollowers: "Quem não me segue de volta",
+  auditModeFollowingAll: "Todos que eu sigo",
+  auditModeFollowersManage: "Quem me segue (remover seguidor)",
+  auditModeHintNonFollowers: "Compara seguidores e seguindo — ideal para limpar não seguidores.",
+  auditModeHintFollowingAll: "Lista completa de seguindo para unfollow em massa (com cuidado).",
+  auditModeHintFollowersManage: "Lista seguidores para remover da sua conta (não é unfollow).",
+  removeFollowerCount: "Remover seguidor (%s)",
+  removeFollowerConfirm:
+    "Remover os seguidores selecionados da sua conta? Eles deixam de te seguir; você não deixa de seguir eles automaticamente.",
+  removeFollowerUnsupported: "Esta rede não suporta remover seguidor pelo script.",
+  maxBulkActionsPerSession: "Máximo de ações em massa por sessão",
   runsInBrowserOnly: "Executa somente nesta sessão do navegador",
   loadCachedScan: "Carregar escaneo anterior (%s contas)",
   ready: "Pronto",
@@ -115,8 +126,10 @@ const messages = {
   scanCompleted: "Escaneamento concluído!",
   scanFailedFollowing: "Falha no escaneamento: não foi possível carregar sua lista de seguidos.",
   scanFailedFollowers: "Falha no escaneamento: não foi possível carregar sua lista de seguidores.",
+  xPreparingScan:
+    "Sincronizando com o X… role a timeline ou abra Seguidores no seu perfil por alguns segundos.",
   scanFailedXSession:
-    "Sessão do X inválida ou expirada. Atualize x.com, confira login e cole o script de novo.",
+    "Sessão do X inválida. F5 em x.com → cole o script de novo → abra Seguidores → aguarde carregar → Iniciar escaneamento.",
   scanFailedXApi:
     "O X recusou a requisição (autenticação). Abra x.com em outra aba, recarregue e tente outra vez.",
   indexingFollowersProgress: "Indexando seguidores (%s carregados)...",
@@ -133,7 +146,7 @@ const messages = {
   hostGuardXOnly: "Só pode ser usado nas rotas do X.com.",
   hostGuardUnsupported: "Abra instagram.com ou x.com, faça login e cole o script na console.",
   filterChangeClearsSelection: "Alterar os filtros vai limpar a seleção atual. Continuar?",
-  documentTitle: "Social Unfollowers — Instagram",
+  documentTitle: "Socura — Instagram",
 } as const;
 
 export type TranslationKey = keyof typeof messages;

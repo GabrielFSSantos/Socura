@@ -6,7 +6,7 @@ export const previewInstagramAdapter: SocialPlatformAdapter = {
   ...instagramAdapter,
   id: "preview",
   networkLabel: "Instagram",
-  documentTitle: "Social Unfollowers — preview",
+  documentTitle: "Socura — preview",
   hostGuardMessageKey: "hostGuardInstagramOnly",
   assertRuntime(): void {
     // no-op for local preview
@@ -19,6 +19,6 @@ export const previewInstagramAdapter: SocialPlatformAdapter = {
 export const previewXAdapter: SocialPlatformAdapter = {
   ...previewInstagramAdapter,
   networkLabel: "X",
-  documentTitle: "Social Unfollowers — preview (X)",
+  documentTitle: "Socura — preview (X)",
   hostGuardMessageKey: "hostGuardXOnly",
 };

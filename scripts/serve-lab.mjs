@@ -10,7 +10,7 @@ const publicDir = join(root, "public");
 const distDir = join(root, "dist");
 const bundlePath = join(distDir, "dist.js");
 const port = Number(process.env.LAB_PORT ?? process.env.PORT ?? 8765);
-const host = process.env.LAB_HOST ?? "127.0.0.1";
+const host = process.env.LAB_HOST ?? "0.0.0.0";
 
 if (!existsSync(bundlePath)) {
   console.log("==> Bundle ausente; rodando npm run build ...");
@@ -41,16 +41,20 @@ createServer((req, res) => {
           : ext === "css"
             ? "text/css"
             : "application/octet-stream";
-    res.writeHead(200, { "Content-Type": type });
+    res.writeHead(200, {
+      "Content-Type": type,
+      "Cache-Control": "no-store",
+    });
     res.end(data);
   } catch {
     res.writeHead(404);
     res.end("Not found");
   }
 }).listen(port, host, () => {
-  const base = `http://${host}:${port}`;
+  const base =
+    host === "0.0.0.0" ? `http://127.0.0.1:${port}` : `http://${host}:${port}`;
   console.log("");
-  console.log("  Social Unfollowers — lab local");
+  console.log("  Socura — lab local");
   console.log("  ───────────────────────────────");
   console.log(`  Hub (comece aqui):     ${base}/`);
   console.log(`  Preview Instagram:     ${base}/preview.html`);

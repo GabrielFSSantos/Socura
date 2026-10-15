@@ -1,8 +1,11 @@
+import { AuditMode } from "../model/audit-mode";
 import { UserNode } from "../model/user";
 import { Timings } from "../model/timings";
 import { CHECKS_BEFORE_LONG_SLEEP, RATE_LIMIT_COOLDOWN_SECONDS } from "../constants/constants";
 import { addGraphUserToIndex, createGraphUserIndex, isGraphUserInIndex } from "../platform/graph-index";
 import { GraphUser, PlatformApiError, SocialPlatformAdapter } from "../platform/types";
+import { preflightXScanAccess } from "../platform/x/x-adapter";
+import { resetXHttpSessionCache, waitForXApiMirror } from "../platform/x/x-http";
 import { sleep } from "../utils/utils";
 import { t } from "../utils/i18n";
 
@@ -13,12 +16,12 @@ export interface ScanCallbacks {
   onFollowingProgress: (
     checkedCount: number,
     percentage: number,
-    newNonFollowers: readonly UserNode[],
+    newUsers: readonly UserNode[],
   ) => void;
   onFollowersFailed: () => void;
   onFollowingFailedEarly: () => void;
   onComplete: (result: {
-    nonFollowers: readonly UserNode[];
+    results: readonly UserNode[];
     checkedCount: number;
     scanIsComplete: boolean;
   }) => void;
@@ -27,9 +30,31 @@ export interface ScanCallbacks {
 
 export async function runAccountScan(
   adapter: SocialPlatformAdapter,
+  auditMode: AuditMode,
   timings: Timings,
   callbacks: ScanCallbacks,
 ): Promise<void> {
+  if (adapter.id === "x") {
+    resetXHttpSessionCache();
+    callbacks.onToast(t("xPreparingScan"));
+    await waitForXApiMirror(18_000);
+    let preflight = await preflightXScanAccess();
+    for (let attempt = 0; attempt < 2 && !preflight.ok && preflight.errorKind === "session"; attempt++) {
+      callbacks.onToast(t("xPreparingScan"));
+      await sleep(2000);
+      await waitForXApiMirror(8000);
+      preflight = await preflightXScanAccess();
+    }
+    callbacks.onClearToast();
+    if (!preflight.ok) {
+      callbacks.onFollowersFailed();
+      callbacks.onToast(
+        preflight.errorKind === "session" ? t("scanFailedXSession") : t("scanFailedXApi"),
+      );
+      return;
+    }
+  }
+
   const viewerId = adapter.getViewerId();
   if (!viewerId) {
     callbacks.onFollowingFailedEarly();
@@ -127,6 +152,74 @@ export async function runAccountScan(
     }
   };
 
+  const results: UserNode[] = [];
+  let checkedCount = 0;
+
+  if (auditMode === "followers_manage") {
+    if (!adapter.capabilities.removeFollower) {
+      callbacks.onFollowersFailed();
+      callbacks.onToast(t("removeFollowerUnsupported"));
+      return;
+    }
+    const followersCompleted = await fetchList(
+      "followers",
+      adapter.followersPageSafetyLimit,
+      async pageUsers => {
+        const batch: UserNode[] = [];
+        for (const user of pageUsers) {
+          const node = adapter.graphUserToUserNode(user, true);
+          results.push(node);
+          batch.push(node);
+          checkedCount++;
+        }
+        const progress = Math.min(99, Math.round(100 * (1 - 1 / (1 + checkedCount / 150))));
+        callbacks.onFollowingProgress(checkedCount, progress, batch);
+        callbacks.onToast(t("indexingFollowersProgress", checkedCount));
+        return true;
+      },
+    );
+    if (!followersCompleted && checkedCount === 0) {
+      callbacks.onFollowersFailed();
+      callbacks.onToast(t("scanFailedFollowers"));
+      return;
+    }
+    callbacks.onComplete({ results, checkedCount, scanIsComplete: followersCompleted });
+    callbacks.onToast(
+      followersCompleted ? t("scanCompleted") : t("partialScanInterrupted", checkedCount),
+    );
+    return;
+  }
+
+  if (auditMode === "following_all") {
+    const followingCompleted = await fetchList(
+      "following",
+      adapter.followingPageSafetyLimit,
+      async pageUsers => {
+        const batch: UserNode[] = [];
+        for (const user of pageUsers) {
+          const node = adapter.graphUserToUserNode(user, false);
+          results.push(node);
+          batch.push(node);
+          checkedCount++;
+        }
+        const progress = Math.min(99, Math.round(100 * (1 - 1 / (1 + checkedCount / 150))));
+        callbacks.onFollowingProgress(checkedCount, progress, batch);
+        callbacks.onToast(t("scanningFollowingProgress", checkedCount));
+        return true;
+      },
+    );
+    if (!followingCompleted && checkedCount === 0) {
+      callbacks.onFollowingFailedEarly();
+      callbacks.onToast(t("scanFailedFollowing"));
+      return;
+    }
+    callbacks.onComplete({ results, checkedCount, scanIsComplete: followingCompleted });
+    callbacks.onToast(
+      followingCompleted ? t("scanCompleted") : t("partialScanInterrupted", checkedCount),
+    );
+    return;
+  }
+
   const followerIndex = createGraphUserIndex();
   let followersCount = 0;
 
@@ -153,9 +246,6 @@ export async function runAccountScan(
 
   callbacks.onFollowersProgress(followersCount, 50);
 
-  const nonFollowers: UserNode[] = [];
-  let checkedCount = 0;
-
   const followingCompleted = await fetchList(
     "following",
     adapter.followingPageSafetyLimit,
@@ -165,7 +255,7 @@ export async function runAccountScan(
         const followsViewer = isGraphUserInIndex(followerIndex, user);
         if (!followsViewer) {
           const node = adapter.graphUserToUserNode(user, false);
-          nonFollowers.push(node);
+          results.push(node);
           batch.push(node);
         }
         checkedCount++;
@@ -184,7 +274,7 @@ export async function runAccountScan(
   }
 
   const scanIsComplete = followingCompleted;
-  callbacks.onComplete({ nonFollowers, checkedCount, scanIsComplete });
+  callbacks.onComplete({ results, checkedCount, scanIsComplete });
   callbacks.onToast(
     scanIsComplete ? t("scanCompleted") : t("partialScanInterrupted", checkedCount),
   );

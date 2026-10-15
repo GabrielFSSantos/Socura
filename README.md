@@ -1,25 +1,25 @@
-# Social Unfollowers
+# Socura
 
-[![Maintenance](https://img.shields.io/maintenance/yes/2026)](https://github.com/GabrielFSSantos/Social-Unfollowers)
+[![Maintenance](https://img.shields.io/maintenance/yes/2026)](https://github.com/GabrielFSSantos/Socura)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Ferramenta para descobrir **quem você segue mas não te segue de volta** no **Instagram** ou no **X.com**. Funciona **no navegador**, colando um script na console — sem instalar extensões nem enviar dados a servidores externos.
+**Curadoria e automação da sua conta nas redes — no navegador.** Audite seguidores e seguindo, liste branca, unfollow e remova seguidores no **Instagram** e **X.com** hoje; outras redes no futuro. Cole um script na console — sem extensão e sem enviar dados a servidores externos.
 
 > **Transmissão ao vivo e cache:** as contas aparecem na tela em tempo real conforme cada lote é buscado. Escaneamentos concluídos ficam em cache local para reabrir a auditoria na hora, sem repetir chamadas desnecessárias à API.
 
 ## Uso no computador
 
-1. Abra a página do script: [Social Unfollowers no GitHub Pages](https://gabrielfssantos.github.io/Social-Unfollowers/) (desenvolvedores: após `npm run build`, use o bundle em `public/index.html`).
+1. Abra a página do script: [Socura no GitHub Pages](https://gabrielfssantos.github.io/Socura/) (desenvolvedores: edite `public/index.shell.html` e rode `npm run build` para gerar `public/index.html`).
 2. Copie o código com o botão **Copiar código**.
    <br/><img src="./assets/copy_code.png" alt="Botão copiar código" />
 3. Acesse [instagram.com](https://www.instagram.com) ou [x.com](https://x.com), faça login.
 4. Abra o console do desenvolvedor:
    - Windows / Linux: `Ctrl + Shift + J`
    - macOS: `⌘ + ⌥ + I`
-5. Cole o script e pressione `Enter`. A interface do Social Unfollowers será exibida.
-   - Se o navegador pedir confirmação antes de colar, digite **`allow pasting`** (em inglês) na console e pressione Enter; depois cole de novo. É proteção padrão do Chrome/Edge — revise o código na [página do projeto](https://gabrielfssantos.github.io/Social-Unfollowers/) ou no repositório antes de colar.
+5. Cole o script e pressione `Enter`. A interface do Socura será exibida.
+   - Se o navegador pedir confirmação antes de colar, digite **`allow pasting`** (em inglês) na console e pressione Enter; depois cole de novo. É proteção padrão do Chrome/Edge — revise o código na [página do projeto](https://gabrielfssantos.github.io/Socura/) ou no repositório antes de colar.
    <br/><img src="./assets/initial.png" alt="Tela inicial" />
-6. Clique em **Iniciar escaneamento** (ou **Carregar escaneo anterior** para abrir resultados salvos).
+6. Escolha o **modo** (não seguidores, todos que sigo ou gerenciar seguidores) e clique em **Iniciar escaneamento** (ou **Carregar escaneo anterior**).
 7. Durante o escaneamento, as contas vão aparecendo e o status de follow-back é atualizado.
    <br/><img src="./assets/results.png" alt="Tela de resultados" />
 8. **Lista branca:** clique na foto do perfil para proteger contas do unfollow.
@@ -32,7 +32,7 @@ O **mesmo** script detecta a rede pelo site aberto (`instagram.com` vs `x.com`).
 
 <br/><img src="./assets/initial_x.png" alt="Interface no preview X" />
 
-Detalhes: [docs/documentation/17_fluxo_escaneamento_x.md](docs/documentation/17_fluxo_escaneamento_x.md). Problemas de sessão/401: [18_debug_x_sessao.md](docs/documentation/18_debug_x_sessao.md).
+Detalhes: [docs/PRODUTO.md](docs/PRODUTO.md) e [docs/PLATAFORMAS/x.md](docs/PLATAFORMAS/x.md).
 
 ## Uso no celular (Android)
 
@@ -42,7 +42,8 @@ Detalhes: [docs/documentation/17_fluxo_escaneamento_x.md](docs/documentation/17_
 
 ## Funcionalidades
 
-- **Escaneamento:** identifica quem não te segue de volta.
+- **Três modos:** não seguidores, revisar todos que você segue, listar seguidores para remover.
+- **Escaneamento:** identifica quem não te segue de volta (modo padrão).
 - **Streaming progressivo:** resultados aparecem por lote, sem tela vazia em contas grandes.
 - **Cache local:** reabra escaneamentos concluídos sem refazer tudo.
 - **Proteção de sessão:** headers da web do Instagram (`X-ASBD-ID`, `X-CSRFToken`, etc.) para reduzir logouts forçados.
@@ -61,18 +62,17 @@ Guia completo do código, fluxos, API Instagram, build e gate:
 
 ## Desenvolvimento
 
-- Node 16+ / 18+ / 20+
-- `npm install`
-- **`npm run serve`** — sobe o lab em **http://127.0.0.1:8765** (build automático se faltar `dist/dist.js`)
-- `npm run serve:build` — força rebuild antes de servir
-- `npm run build` — gera `dist/dist.js` + atualiza `public/index.html`
-- `npm run build-dev` — webpack dev server (avançado)
-- `npm run test:unit` — testes unitários (índice + parser X)
-- `npm run e2e:record` — gravar sessão X (uma vez) → `e2e/.auth/storage-state.json`
-- `npm run e2e:live` — smoke no preview; scan real no X se a sessão existir
-- `npm run screenshots:readme` — regenerar PNGs em `assets/` (após `build`)
+| Comando | Uso |
+| --- | --- |
+| **`npm run dev`** | Lab local em **http://127.0.0.1:8765** (copiar bundle para IG/X) |
+| **`npm test`** | Testes sem login (unitários + preview) — gate |
+| **`npm run test:session`** | Testes logados no Chrome (funcionalidades reais) |
 
-O workflow de CI atualiza o bundle embutido em `public/index.html`. Evite editar o bloco do script manualmente; textos da landing (fora do bundle) podem ser ajustados conforme [`docs/documentation/02_build_webpack_deploy_github_pages.md`](docs/documentation/02_build_webpack_deploy_github_pages.md).
+Também: `npm run build`, `npm run test:verify` (fechamento completo), `npm run auth` para gravar sessão E2E.
+
+Detalhes: **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** · **[docs/README.md](docs/README.md)**
+
+O CI gera `public/index.html` a partir de `public/index.shell.html`. Evite editar o bloco do script manualmente; textos e estilos da landing ficam no shell e em `public/landing.css`.
 
 ## Origem e créditos
 

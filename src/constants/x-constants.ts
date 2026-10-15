@@ -9,7 +9,7 @@ export const X_GRAPHQL_BASE = "https://x.com/i/api/graphql";
 
 /**
  * QueryIds mudam com deploys do X. Atualize via localStorage (iu_x_graphql_*_query_id)
- * ou capture no Network — ver docs/documentation/18_debug_x_sessao.md
+ * ou capture no Network — ver docs/PLATAFORMAS/x.md
  */
 export const X_GRAPHQL_FOLLOWERS_QUERY_ID = "S8V0yM3VkaFw8okQaR0GeQ";
 export const X_GRAPHQL_FOLLOWING_QUERY_ID = "2Vjey2LtJ8RpV-ye0H4mPg";

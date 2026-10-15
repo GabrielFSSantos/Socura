@@ -3,41 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Social Unfollowers — lab local</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
-    h1 { font-size: 1.35rem; }
-    a.card { display: block; padding: 1rem; margin: 0.75rem 0; border: 1px solid #ccc; border-radius: 8px; text-decoration: none; color: inherit; }
-    a.card:hover { border-color: #333; background: #f8f8f8; }
-    a.card strong { display: block; margin-bottom: 0.25rem; }
-    .muted { color: #555; font-size: 0.9rem; }
-    code { background: #eee; padding: 0.1em 0.35em; border-radius: 4px; }
-  </style>
+  <title>Socura — lab local</title>
+  <link rel="stylesheet" href="landing.css">
 </head>
-<body>
-  <h1>Social Unfollowers — lab local</h1>
-  <p class="muted">Servidor: <code>npm run serve</code> · porta padrão <code>8765</code></p>
+<body class="landing-page lab-page">
+  <div class="landing-wrap">
+    <header class="landing-header">
+      <svg width="44" height="44" viewBox="0 0 354 354" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="177" cy="177" r="177" fill="#e0a33a" />
+        <circle cx="177" cy="115" r="50" fill="#151515" />
+        <ellipse cx="177" cy="243" rx="76" ry="66" fill="#151515" />
+        <rect x="243" y="112" width="66" height="20" rx="10" fill="#62d6d0" />
+      </svg>
+      <div class="logo-text">
+        <span>Socura</span>
+      </div>
+    </header>
 
-  <a class="card" href="/preview.html">
-    <strong>Preview Instagram</strong>
-    <span class="muted">UI com dados fictícios — sem login no Instagram.</span>
-  </a>
+    <h1>Lab local</h1>
+    <p class="lab-intro">Servidor: <code>npm run dev</code> · porta padrão <code>8765</code></p>
 
-  <a class="card" href="/preview-x.html">
-    <strong>Preview X</strong>
-    <span class="muted">Mesma UI, rede X simulada (<code>?platform=x</code>).</span>
-  </a>
+    <a class="lab-card" href="/preview.html">
+      <strong>Preview Instagram</strong>
+      <span class="muted">UI com dados fictícios — sem login no Instagram.</span>
+    </a>
 
-  <a class="card" href="/preview.html?preview=scanning">
-    <strong>Preview — tela de resultados</strong>
-    <span class="muted">Atalho com lista mock já carregada.</span>
-  </a>
+    <a class="lab-card" href="/preview-x.html">
+      <strong>Preview X</strong>
+      <span class="muted">Mesma UI, rede X simulada (<code>?platform=x</code>).</span>
+    </a>
 
-  <a class="card" href="/index.html">
-    <strong>Script para colar (instagram.com / x.com)</strong>
-    <span class="muted">Copie o bundle e cole na console do site real, logado. No Chrome: digite <code>allow pasting</code> antes de colar.</span>
-  </a>
+    <a class="lab-card" href="/preview.html?preview=scanning">
+      <strong>Preview — tela de resultados</strong>
+      <span class="muted">Atalho com lista mock já carregada.</span>
+    </a>
 
-  <p class="muted">API real só funciona em <code>www.instagram.com</code> ou <code>x.com</code>, não neste localhost.</p>
+    <a class="lab-card" href="/index.html">
+      <strong>Script para colar (instagram.com / x.com)</strong>
+      <span class="muted">Copie o bundle e cole na console do site real, logado. No Chrome: digite <code>allow pasting</code> antes de colar.</span>
+    </a>
+
+    <a class="lab-card" href="/dist/dist.js" download="socura-dist.js">
+      <strong>Bundle direto (.js)</strong>
+      <span class="muted">Alternativa: abra ou baixe <code>/dist/dist.js</code>, copie tudo e cole no x.com após <code>npm run build</code>.</span>
+    </a>
+
+    <p class="muted" style="margin-top: 1.5rem;">API real só funciona em <code>www.instagram.com</code> ou <code>x.com</code>, não neste localhost.</p>
+  </div>
 </body>
 </html>

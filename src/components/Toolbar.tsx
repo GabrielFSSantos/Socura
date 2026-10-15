@@ -73,7 +73,7 @@ export const Toolbar = ({
         >
           <Logo />
           <div className="logo-text">
-            <span>Social Unfollowers</span>
+            <span>Socura</span>
             <span>{networkLabel}</span>
           </div>
         </div>

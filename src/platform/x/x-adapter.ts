@@ -19,6 +19,7 @@ import {
   hasXSessionCookies,
   parseViewerIdFromTwidCookie,
   resolveXViewerId,
+  waitForXApiMirror,
 } from "./x-http";
 import { parseXListResponse, XListResponse } from "./x-list-parse";
 
@@ -56,6 +57,39 @@ async function fetchXListRest(
   return parseXListResponse(data);
 }
 
+export type XPreflightResult =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly errorKind: "session" | "api" | "rate_limit" };
+
+export async function preflightXScanAccess(): Promise<XPreflightResult> {
+  await waitForXApiMirror(12_000);
+  const viewerId = await resolveXViewerId();
+  if (!viewerId) {
+    return { ok: false, errorKind: "session" };
+  }
+  const verify = await fetchXApiJson("account/verify_credentials.json?skip_status=true");
+  if (!verify.ok && verify.status !== 404) {
+    if (verify.status === 401 || verify.status === 403) {
+      return { ok: false, errorKind: "session" };
+    }
+    return { ok: false, errorKind: "api" };
+  }
+  try {
+    await fetchXList("followers", undefined, 20);
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof PlatformApiError) {
+      if (e.kind === "session") {
+        return { ok: false, errorKind: "session" };
+      }
+      if (e.kind === "rate_limit") {
+        return { ok: false, errorKind: "rate_limit" };
+      }
+    }
+    return { ok: false, errorKind: "api" };
+  }
+}
+
 async function fetchXList(kind: "followers" | "friends", cursor?: string, pageSize = 50): Promise<GraphPage> {
   try {
     return await fetchXListRest(kind, cursor, pageSize);
@@ -72,19 +106,38 @@ async function fetchXList(kind: "followers" | "friends", cursor?: string, pageSi
   }
 }
 
+async function xFriendshipPost(path: string, userId: string): Promise<UnfollowResult> {
+  const response = await fetchXApiJson(path, {
+    method: "POST",
+    headerKind: "postForm",
+    body: new URLSearchParams({ user_id: userId }).toString(),
+  });
+  const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  const errors = data?.errors;
+  const actionBlocked = response.status === 403 || response.status === 429 || Boolean(errors);
+  const success = response.ok && !errors;
+  return {
+    success,
+    actionBlocked,
+    httpStatus: response.status,
+    message: Array.isArray(errors) ? JSON.stringify(errors) : undefined,
+  };
+}
+
 export const xAdapter: SocialPlatformAdapter = {
   id: "x",
   networkLabel: "X",
-  documentTitle: "Social Unfollowers — X",
+  documentTitle: "Socura — X",
   storageKeyPrefix: X_STORAGE_KEY_PREFIX,
   followersPageSafetyLimit: FOLLOWERS_PAGE_SAFETY_LIMIT_X,
   followingPageSafetyLimit: FOLLOWING_PAGE_SAFETY_LIMIT_X,
   hostGuardMessageKey: "hostGuardXOnly",
+  capabilities: { removeFollower: true },
 
   assertRuntime(): void {
     if (!hasXSessionCookies()) {
       console.warn(
-        "Social Unfollowers: cookie ct0/twid não visível no JS; se o scan falhar, recarregue x.com e tente de novo.",
+        "Socura: cookie ct0/twid não visível no JS; se o scan falhar, recarregue x.com e tente de novo.",
       );
     }
   },
@@ -132,21 +185,11 @@ export const xAdapter: SocialPlatformAdapter = {
   },
 
   async unfollow(userId: string): Promise<UnfollowResult> {
-    const response = await fetchXApiJson("friendships/destroy.json", {
-      method: "POST",
-      headerKind: "postForm",
-      body: new URLSearchParams({ user_id: userId }).toString(),
-    });
-    const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-    const errors = data?.errors;
-    const actionBlocked = response.status === 403 || response.status === 429 || Boolean(errors);
-    const success = response.ok && !errors;
-    return {
-      success,
-      actionBlocked,
-      httpStatus: response.status,
-      message: Array.isArray(errors) ? JSON.stringify(errors) : undefined,
-    };
+    return xFriendshipPost("friendships/destroy.json", userId);
+  },
+
+  async removeFollower(userId: string): Promise<UnfollowResult> {
+    return xFriendshipPost("friendships/remove_follower.json", userId);
   },
 
   isTransientFetchError(error: unknown): boolean {

@@ -1,4 +1,5 @@
 import React from "react";
+import { bulkActionForAuditMode } from "../model/audit-mode";
 import { assertUnreachable, getCurrentPageUnfollowers, getMaxPage, getUsersForDisplay, isWithoutProfilePicture } from "../utils/utils";
 import { State } from "../model/state";
 import { UserNode } from "../model/user";
@@ -38,6 +39,8 @@ export const Searching = ({
     state.searchTerm,
     state.filter,
   );
+  const queueAction = bulkActionForAuditMode(state.auditMode);
+  const isRemoveFollower = queueAction === "remove_follower";
   let currentLetter = "";
 
   const onNewLetter = (firstLetter: string) => {
@@ -255,7 +258,8 @@ export const Searching = ({
               alert(t("unfollowDisabledPartialScan"));
               return;
             }
-            if (!confirm(t("unfollowConfirm"))) {
+            const confirmKey = isRemoveFollower ? "removeFollowerConfirm" : "unfollowConfirm";
+            if (!confirm(t(confirmKey))) {
               return;
             }
             //TODO TEMP until types are properly fixed
@@ -271,6 +275,7 @@ export const Searching = ({
               const newState: State = {
                 ...prevState,
                 status: "unfollowing",
+                queueAction,
                 percentage: 0,
                 unfollowLog: [],
                 filter: {
@@ -282,7 +287,9 @@ export const Searching = ({
             });
           }}
         >
-          {t("unfollowCount", state.selectedResults.length)}
+          {isRemoveFollower
+            ? t("removeFollowerCount", state.selectedResults.length)
+            : t("unfollowCount", state.selectedResults.length)}
         </button>
       </aside>
       <article className="results-container">

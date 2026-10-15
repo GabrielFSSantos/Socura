@@ -17,6 +17,7 @@ import {
   getCookie,
   InstagramApiError,
   rawFriendshipUserToUserNode,
+  removeFollowerUserUrlGenerator,
   unfollowUserUrlGenerator,
 } from "../../utils/utils";
 import { GraphPage, GraphUser, PlatformApiError, SocialPlatformAdapter, UnfollowResult } from "../types";
@@ -64,11 +65,12 @@ async function fetchListPage(kind: FriendshipsListKind, cursor?: string, pageSiz
 export const instagramAdapter: SocialPlatformAdapter = {
   id: "instagram",
   networkLabel: "Instagram",
-  documentTitle: "Social Unfollowers — Instagram",
+  documentTitle: "Socura — Instagram",
   storageKeyPrefix: INSTAGRAM_STORAGE_PREFIX,
   followersPageSafetyLimit: FOLLOWERS_PAGE_SAFETY_LIMIT,
   followingPageSafetyLimit: FOLLOWING_PAGE_SAFETY_LIMIT,
   hostGuardMessageKey: "hostGuardInstagramOnly",
+  capabilities: { removeFollower: true },
 
   assertRuntime(): void {
     const viewer = getCookie("ds_user_id");
@@ -110,6 +112,34 @@ export const instagramAdapter: SocialPlatformAdapter = {
       return { success: false, actionBlocked: false, httpStatus: 0, message: "csrftoken missing" };
     }
     const res = await fetch(unfollowUserUrlGenerator(userId), {
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "x-csrftoken": csrftoken,
+        "x-ig-app-id": INSTAGRAM_WEB_APP_ID,
+        "x-asbd-id": INSTAGRAM_ASBD_ID,
+        "x-requested-with": "XMLHttpRequest",
+      },
+      method: "POST",
+      credentials: "same-origin",
+    });
+    const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+    const message = String(data?.message ?? "");
+    const actionBlocked =
+      res.status === 429 ||
+      res.status === 400 ||
+      data?.status === "fail" ||
+      data?.spam === true ||
+      /feedback_required|checkpoint|action_blocked|block/i.test(message);
+    const success = res.ok && data?.status !== "fail" && !actionBlocked;
+    return { success, actionBlocked, httpStatus: res.status, message };
+  },
+
+  async removeFollower(userId: string): Promise<UnfollowResult> {
+    const csrftoken = getCookie("csrftoken");
+    if (!csrftoken) {
+      return { success: false, actionBlocked: false, httpStatus: 0, message: "csrftoken missing" };
+    }
+    const res = await fetch(removeFollowerUserUrlGenerator(userId), {
       headers: {
         "content-type": "application/x-www-form-urlencoded",
         "x-csrftoken": csrftoken,

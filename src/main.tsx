@@ -7,10 +7,16 @@ import { Toast } from "./components/Toast";
 import { UserCheckIcon } from "./components/icons/UserCheckIcon";
 import { UserUncheckIcon } from "./components/icons/UserUncheckIcon";
 import { assertUnreachable, getCurrentPageUnfollowers, getUsersForDisplay } from "./utils/utils";
+import {
+  installXApiHeaderCapture,
+  persistXBearerFromPage,
+  waitForXApiMirror,
+} from "./platform/x/x-http";
 import { resolveAdapter } from "./platform/resolve-adapter";
 import { getActiveAdapter, setActiveAdapter } from "./platform/runtime";
+import { AuditMode, DEFAULT_AUDIT_MODE } from "./model/audit-mode";
 import { runAccountScan } from "./services/scan-service";
-import { runUnfollowQueue } from "./services/unfollow-queue";
+import { runActionQueue } from "./services/action-queue";
 import { NotSearching } from "./components/NotSearching";
 import { State } from "./model/state";
 import { Searching } from "./components/Searching";
@@ -18,6 +24,7 @@ import { Toolbar } from "./components/Toolbar";
 import { Unfollowing } from "./components/Unfollowing";
 import { Timings } from "./model/timings";
 import { loadCachedScanResults, loadTimings, loadWhitelist, saveCachedScanResults, saveTimings, saveWhitelist } from "./utils/whitelist-manager";
+import { DEFAULT_MAX_BULK_ACTIONS_PER_SESSION } from "./constants/constants";
 import { t } from "./utils/i18n";
 
 const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -78,9 +85,14 @@ const _getPreviewUsers = (): readonly UserNode[] => [
 function App() {
   const [state, setState] = useState<State>({
     ...(
-      isLocalPreview && new URLSearchParams(location.search).get("preview") === "scanning"
+      isLocalPreview &&
+        (new URLSearchParams(location.search).get("preview") === "scanning" ||
+          new URLSearchParams(location.search).get("preview") === "scanning-incomplete")
         ? {
           status: "scanning",
+          auditMode:
+            (new URLSearchParams(location.search).get("mode") as AuditMode | null) ??
+            "non_followers",
           page: 1,
           searchTerm: "",
           currentTab: "non_whitelisted",
@@ -88,6 +100,8 @@ function App() {
           results: _getPreviewUsers(),
           selectedResults: _getPreviewUsers().slice(0, 3),
           whitelistedResults: _getPreviewUsers().slice(10, 12),
+          scanIncomplete:
+            new URLSearchParams(location.search).get("preview") === "scanning-incomplete",
           filter: {
             showVerified: true,
             showPrivate: true,
@@ -97,6 +111,8 @@ function App() {
         : { status: "initial" as const }
     ),
   });
+
+  const [auditMode, setAuditMode] = useState<AuditMode>(DEFAULT_AUDIT_MODE);
 
   const [toast, setToast] = useState<{ readonly show: false } | { readonly show: true; readonly text: string }>({
     show: false,
@@ -111,6 +127,8 @@ function App() {
       timeBetweenUnfollows: storedTimings?.timeBetweenUnfollows ?? defaults.timeBetweenUnfollows,
       timeToWaitAfterFiveUnfollows: storedTimings?.timeToWaitAfterFiveUnfollows ?? defaults.timeToWaitAfterFiveUnfollows,
       usersPerSearchCycle: storedTimings?.usersPerSearchCycle ?? defaults.usersPerSearchCycle,
+      maxBulkActionsPerSession:
+        storedTimings?.maxBulkActionsPerSession ?? DEFAULT_MAX_BULK_ACTIONS_PER_SESSION,
     };
   });
 
@@ -156,6 +174,7 @@ function App() {
     const whitelistedResults = loadWhitelist();
     setState({
       status: "scanning",
+      auditMode: DEFAULT_AUDIT_MODE,
       page: 1,
       searchTerm: "",
       currentTab: "non_whitelisted",
@@ -176,14 +195,16 @@ function App() {
     });
   };
 
-  const onScan = async () => {
+  const onScan = async (mode: AuditMode) => {
     if (state.status !== "initial") {
       return;
     }
+    setAuditMode(mode);
     if (isLocalPreview) {
       const previewUsers = _getPreviewUsers();
       setState({
         status: "scanning",
+        auditMode: mode,
         page: 1,
         searchTerm: "",
         currentTab: "non_whitelisted",
@@ -203,6 +224,7 @@ function App() {
     const whitelistedResults = loadWhitelist();
     setState({
       status: "scanning",
+      auditMode: mode,
       page: 1,
       searchTerm: "",
       currentTab: "non_whitelisted",
@@ -376,7 +398,8 @@ function App() {
       return;
     }
     const adapter = getActiveAdapter();
-    void runAccountScan(adapter, timings, {
+    const scanMode = state.status === "scanning" ? state.auditMode : DEFAULT_AUDIT_MODE;
+    void runAccountScan(adapter, scanMode, timings, {
       onToast: text => setToast({ show: true, text }),
       onClearToast: () => setToast({ show: false }),
       onFollowersProgress: (followersCount, percentage) => {
@@ -410,10 +433,10 @@ function App() {
           prev.status === "scanning" ? { ...prev, isScanningActive: false } : prev,
         );
       },
-      onComplete: ({ nonFollowers, checkedCount, scanIsComplete }) => {
-        if (scanIsComplete || nonFollowers.length > 0) {
-          saveCachedScanResults(nonFollowers);
-          setCachedScan({ results: nonFollowers, timestamp: Date.now() });
+      onComplete: ({ results, checkedCount, scanIsComplete }) => {
+        if (scanIsComplete || results.length > 0) {
+          saveCachedScanResults(results);
+          setCachedScan({ results, timestamp: Date.now() });
         }
         setState(prev => {
           if (prev.status !== "scanning") {
@@ -424,7 +447,7 @@ function App() {
             percentage: 100,
             scanIncomplete: !scanIsComplete,
             isScanningActive: false,
-            results: nonFollowers,
+            results,
             totalScanned: checkedCount,
           };
         });
@@ -439,7 +462,8 @@ function App() {
       return;
     }
     const adapter = getActiveAdapter();
-    void runUnfollowQueue(adapter, state.selectedResults, timings, {
+    const queueAction = state.queueAction;
+    void runActionQueue(adapter, queueAction, state.selectedResults, timings, {
       onProgress: (entry, percentage) => {
         setState(prev => {
           if (prev.status !== "unfollowing") {
@@ -464,7 +488,16 @@ function App() {
   let markup: React.JSX.Element;
   switch (state.status) {
     case "initial":
-      markup = <NotSearching onScan={onScan} cachedScan={cachedScan} onLoadCached={onLoadCached}></NotSearching>;
+      markup = (
+        <NotSearching
+          onScan={onScan}
+          cachedScan={cachedScan}
+          onLoadCached={onLoadCached}
+          auditMode={auditMode}
+          onAuditModeChange={setAuditMode}
+          capabilities={getActiveAdapter().capabilities}
+        />
+      );
       break;
 
     case "scanning": {
@@ -524,6 +557,41 @@ const resolvedAdapter = resolveAdapter(
   isPreviewX ? "x" : "instagram",
 );
 
+function mountApp(): void {
+  document.body.innerHTML = "";
+  render(<App />, document.body);
+}
+
+async function bootXApp(): Promise<void> {
+  installXApiHeaderCapture();
+  persistXBearerFromPage();
+
+  const banner = document.createElement("div");
+  banner.textContent = t("xPreparingScan");
+  banner.setAttribute(
+    "style",
+    [
+      "position:fixed",
+      "inset:0",
+      "z-index:2147483646",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "padding:24px",
+      "background:rgba(0,0,0,0.55)",
+      "color:#fff",
+      "font:600 16px/1.4 system-ui,sans-serif",
+      "text-align:center",
+      "pointer-events:none",
+    ].join(";"),
+  );
+  document.body.appendChild(banner);
+
+  await waitForXApiMirror(14_000);
+  banner.remove();
+  mountApp();
+}
+
 if (!resolvedAdapter) {
   alert(t("hostGuardUnsupported"));
 } else {
@@ -531,8 +599,13 @@ if (!resolvedAdapter) {
   try {
     resolvedAdapter.assertRuntime();
     document.title = resolvedAdapter.documentTitle;
-    document.body.innerHTML = "";
-    render(<App />, document.body);
+    if (resolvedAdapter.id === "x") {
+      void bootXApp().catch(() => {
+        alert(t("scanFailedXSession"));
+      });
+    } else {
+      mountApp();
+    }
   } catch {
     const msg =
       resolvedAdapter.id === "x"

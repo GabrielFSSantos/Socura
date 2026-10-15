@@ -26,6 +26,10 @@ export interface UnfollowResult {
   readonly message?: string;
 }
 
+export interface PlatformCapabilities {
+  readonly removeFollower: boolean;
+}
+
 export type PlatformApiErrorKind = "session" | "api" | "rate_limit";
 
 export class PlatformApiError extends Error {
@@ -51,6 +55,7 @@ export interface SocialPlatformAdapter {
   readonly followersPageSafetyLimit: number;
   readonly followingPageSafetyLimit: number;
   readonly hostGuardMessageKey: TranslationKey;
+  readonly capabilities: PlatformCapabilities;
 
   assertRuntime(): void;
   getViewerId(): string | null;
@@ -58,6 +63,7 @@ export interface SocialPlatformAdapter {
   fetchFollowingPage(cursor?: string, pageSize?: number): Promise<GraphPage>;
   graphUserToUserNode(user: GraphUser, followsViewer: boolean): UserNode;
   unfollow(userId: string): Promise<UnfollowResult>;
+  removeFollower(userId: string): Promise<UnfollowResult>;
   isTransientFetchError(error: unknown): boolean;
   isActionBlockedUnfollow(result: UnfollowResult): boolean;
   getDefaultTimings(): Timings;
