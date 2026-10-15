@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+if [[ -f "${HOME}/.config/dev-runtime/env.sh" ]]; then
+  # shellcheck source=/dev/null
+  source "${HOME}/.config/dev-runtime/env.sh"
+fi
 if ! command -v npx >/dev/null 2>&1; then
   echo "npx não encontrado. Carregue nvm/fnm."
   exit 1

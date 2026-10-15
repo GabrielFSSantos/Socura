@@ -2,17 +2,18 @@ import {
   X_GRAPHQL_BASE,
   X_GRAPHQL_FOLLOWERS_QUERY_ID,
   X_GRAPHQL_FOLLOWING_QUERY_ID,
-} from "../../constants/x-constants";
-import { GraphPage, GraphUser, PlatformApiError } from "../types";
-import { buildXApiHeaders, resolveXViewerId } from "./x-http";
-import { mapXListUser, XListUser } from "./x-list-parse";
+} from '../../constants/x-constants';
+import { GraphPage, GraphUser, PlatformApiError } from '../types';
+import { buildXApiHeaders, resolveXViewerId } from './x-http';
+import { mapXListUser, XListUser } from './x-list-parse';
 
-const GRAPHQL_FOLLOWERS_OP = "Followers";
-const GRAPHQL_FOLLOWING_OP = "Following";
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- GraphQL JSON em runtime é parcialmente tipado */
+const GRAPHQL_FOLLOWERS_OP = 'Followers';
+const GRAPHQL_FOLLOWING_OP = 'Following';
 
-function graphqlQueryId(kind: "followers" | "friends"): string {
+function graphqlQueryId(kind: 'followers' | 'friends'): string {
   const overrideKey =
-    kind === "followers" ? "iu_x_graphql_followers_query_id" : "iu_x_graphql_following_query_id";
+    kind === 'followers' ? 'iu_x_graphql_followers_query_id' : 'iu_x_graphql_following_query_id';
   try {
     const stored = localStorage.getItem(overrideKey);
     if (stored?.trim()) {
@@ -21,7 +22,7 @@ function graphqlQueryId(kind: "followers" | "friends"): string {
   } catch {
     // ignore
   }
-  return kind === "followers" ? X_GRAPHQL_FOLLOWERS_QUERY_ID : X_GRAPHQL_FOLLOWING_QUERY_ID;
+  return kind === 'followers' ? X_GRAPHQL_FOLLOWERS_QUERY_ID : X_GRAPHQL_FOLLOWING_QUERY_ID;
 }
 
 type GraphqlJson = Record<string, unknown>;
@@ -41,8 +42,8 @@ function extractInstructions(data: GraphqlJson): unknown[] {
     )?.timeline,
   ];
   let node: unknown = data;
-  for (const key of ["data", "user", "result", "timeline", "timeline"]) {
-    if (node && typeof node === "object" && key in (node as GraphqlJson)) {
+  for (const key of ['data', 'user', 'result', 'timeline', 'timeline']) {
+    if (node && typeof node === 'object' && key in (node as GraphqlJson)) {
       node = (node as GraphqlJson)[key];
     }
   }
@@ -86,11 +87,11 @@ function cursorFromGraphql(data: GraphqlJson): string | undefined {
       continue;
     }
     for (const entry of entries) {
-      const entryId = String((entry as GraphqlJson)?.entryId ?? "");
-      if (!entryId.includes("cursor-bottom")) {
+      const entryId = String((entry as GraphqlJson)?.entryId ?? '');
+      if (!entryId.includes('cursor-bottom')) {
         continue;
       }
-      const value = String(((entry as GraphqlJson)?.content as GraphqlJson)?.value ?? "");
+      const value = String(((entry as GraphqlJson)?.content as GraphqlJson)?.value ?? '');
       if (value) {
         return value;
       }
@@ -100,15 +101,15 @@ function cursorFromGraphql(data: GraphqlJson): string | undefined {
 }
 
 export async function fetchXListGraphQL(
-  kind: "followers" | "friends",
+  kind: 'followers' | 'friends',
   cursor?: string,
   pageSize = 50,
 ): Promise<GraphPage> {
   const viewerId = await resolveXViewerId();
   if (!viewerId) {
-    throw new PlatformApiError(401, "X session not found", false, "session");
+    throw new PlatformApiError(401, 'X session not found', false, 'session');
   }
-  const operation = kind === "followers" ? GRAPHQL_FOLLOWERS_OP : GRAPHQL_FOLLOWING_OP;
+  const operation = kind === 'followers' ? GRAPHQL_FOLLOWERS_OP : GRAPHQL_FOLLOWING_OP;
   const queryId = graphqlQueryId(kind);
   const variables = {
     userId: viewerId,
@@ -121,17 +122,17 @@ export async function fetchXListGraphQL(
   });
   const url = `${X_GRAPHQL_BASE}/${queryId}/${operation}?${params.toString()}`;
   const res = await fetch(url, {
-    credentials: "include",
-    headers: buildXApiHeaders("get"),
+    credentials: 'include',
+    headers: buildXApiHeaders('get'),
   });
   if (!res.ok) {
     const retryable = res.status === 429 || res.status >= 500;
     const kindError =
       res.status === 401 || res.status === 403
-        ? "session"
+        ? 'session'
         : res.status === 429
-          ? "rate_limit"
-          : "api";
+          ? 'rate_limit'
+          : 'api';
     throw new PlatformApiError(
       res.status,
       `X GraphQL HTTP ${res.status} for ${kind}`,

@@ -1,9 +1,10 @@
-import { UserNode } from "../model/user";
-import { DEFAULT_USERS_PER_SEARCH_CYCLE, INSTAGRAM_ASBD_ID, INSTAGRAM_WEB_APP_ID, UNFOLLOWERS_PER_PAGE, WITHOUT_PROFILE_PICTURE_URL_IDS } from "../constants/constants";
-import { ScanningTab } from "../model/scanning-tab";
-import { ScanningFilter } from "../model/scanning-filter";
-import { UnfollowLogEntry } from "../model/unfollow-log-entry";
-import { UnfollowFilter } from "../model/unfollow-filter";
+import { UserNode } from '../model/user';
+import { DEFAULT_USERS_PER_SEARCH_CYCLE, INSTAGRAM_ASBD_ID, INSTAGRAM_WEB_APP_ID, UNFOLLOWERS_PER_PAGE, WITHOUT_PROFILE_PICTURE_URL_IDS } from '../constants/constants';
+import { ScanningTab } from '../model/scanning-tab';
+import { ResultsLens } from '../model/scan-snapshots';
+import { ScanningFilter } from '../model/scanning-filter';
+import { UnfollowLogEntry } from '../model/unfollow-log-entry';
+import { UnfollowFilter } from '../model/unfollow-filter';
 
 export async function copyListToClipboard(nonFollowersList: readonly UserNode[], alertMessage: string): Promise<void> {
   const sortedList = [...nonFollowersList].sort((a, b) => (a.username > b.username ? 1 : -1));
@@ -18,10 +19,10 @@ export async function copyListToClipboard(nonFollowersList: readonly UserNode[],
 }
 
 export function exportToJSON(users: readonly UserNode[]) {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(users, null, 2));
+  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(users, null, 2));
   const downloadAnchorNode = document.createElement('a');
-  downloadAnchorNode.setAttribute("href",     dataStr);
-  downloadAnchorNode.setAttribute("download", "instagram_unfollowers.json");
+  downloadAnchorNode.setAttribute('href', dataStr);
+  downloadAnchorNode.setAttribute('download', 'socura_export.json');
   document.body.appendChild(downloadAnchorNode);
   downloadAnchorNode.click();
   downloadAnchorNode.remove();
@@ -35,17 +36,17 @@ export function exportToCSV(users: readonly UserNode[]) {
     `"${user.full_name.replace(/"/g, '""')}"`,
     user.is_verified,
     user.is_private,
-    user.profile_pic_url
+    user.profile_pic_url,
   ]);
-  
-  const csvContent = "data:text/csv;charset=utf-8," 
-    + headers.join(",") + "\n" 
-    + rows.map(e => e.join(",")).join("\n");
+
+  const csvContent = 'data:text/csv;charset=utf-8,'
+    + headers.join(',') + '\n'
+    + rows.map(e => e.join(',')).join('\n');
 
   const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "instagram_unfollowers.csv");
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', 'socura_export.csv');
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -75,17 +76,18 @@ export function getUsersForDisplay(
   currentTab: ScanningTab,
   searchTerm: string,
   filter: ScanningFilter,
+  resultsLens: ResultsLens = 'non_followers',
 ): readonly UserNode[] {
   const users: UserNode[] = [];
   for (const result of results) {
     const isWhitelisted = whitelistedResults.find(user => user.id === result.id) !== undefined;
     switch (currentTab) {
-      case "non_whitelisted":
+      case 'non_whitelisted':
         if (isWhitelisted) {
           continue;
         }
         break;
-      case "whitelisted":
+      case 'whitelisted':
         if (!isWhitelisted) {
           continue;
         }
@@ -99,10 +101,13 @@ export function getUsersForDisplay(
     if (!filter.showVerified && result.is_verified) {
       continue;
     }
-    // Scans only keep accounts that don't follow back; this also hides
-    // mutuals stored by older cached scans.
-    if (result.follows_viewer) {
-      continue;
+    if (resultsLens === 'following_all') {
+      if (!filter.showFollowsViewer && result.follows_viewer) {
+        continue;
+      }
+      if (!filter.showNotFollowsViewer && !result.follows_viewer) {
+        continue;
+      }
     }
     if (!filter.showWithOutProfilePicture && isWithoutProfilePicture(result)) {
       continue;
@@ -110,7 +115,7 @@ export function getUsersForDisplay(
     const userMatchesSearchTerm =
       result.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       result.full_name.toLowerCase().includes(searchTerm.toLowerCase());
-    if (searchTerm !== "" && !userMatchesSearchTerm) {
+    if (searchTerm !== '' && !userMatchesSearchTerm) {
       continue;
     }
     users.push(result);
@@ -128,7 +133,7 @@ export function getUnfollowLogForDisplay(log: readonly UnfollowLogEntry[], searc
       continue;
     }
     const userMatchesSearchTerm = entry.user.username.toLowerCase().includes(searchTerm.toLowerCase());
-    if (searchTerm !== "" && !userMatchesSearchTerm) {
+    if (searchTerm !== '' && !userMatchesSearchTerm) {
       continue;
     }
     entries.push(entry);
@@ -239,7 +244,7 @@ export async function fetchFriendshipsPage(kind: FriendshipsListKind, maxId?: st
   if (!response.ok) {
     throw new InstagramApiError(response.status, `Instagram returned HTTP ${response.status} while fetching ${kind}`);
   }
-  const data = (await response.json()) as any;
+  const data = (await response.json());
   if (data?.status === 'fail' || (!data?.users && data?.message)) {
     throw new InstagramApiError(response.status, data?.message || `Instagram returned failure status while fetching ${kind}`);
   }
@@ -283,7 +288,7 @@ export function extractUserIdentities(user: RawFriendshipUser): {
   readonly username: string;
 } {
   const ids: string[] = [];
-  if (user.pk !== undefined && user.pk !== null) {
+  {
     const s = String(user.pk).trim();
     if (s) {
       ids.push(s);
@@ -301,7 +306,7 @@ export function extractUserIdentities(user: RawFriendshipUser): {
       ids.push(s);
     }
   }
-  const username = (user.username ?? "").trim().toLowerCase();
+  const username = user.username.trim().toLowerCase();
   return { ids, username };
 }
 

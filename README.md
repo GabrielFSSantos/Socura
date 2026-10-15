@@ -47,7 +47,7 @@ O comando `dev` gera o bundle e sobe o **lab** em **http://127.0.0.1:8765/**:
 | --- | --- |
 | `/` | Hub com links |
 | `/index.html` | Mesma landing do Pages — **copiar o script** para IG/X |
-| `/preview.html` / `/preview-x.html` | UI de teste com dados fictícios (sem login) |
+| `/preview.html` / `/preview-x.html` | Pré-visualização da interface com dados fictícios (sem login) |
 
 **Só gerar o arquivo, sem servidor:**
 
@@ -70,18 +70,18 @@ O bundle fica em `dist/dist.js`. A landing atualizada é `public/index.html` (ge
 3. Cole o script e pressione `Enter`. A interface do Socura será exibida.
    - Se o navegador pedir confirmação antes de colar, digite **`allow pasting`** (em inglês) na console e pressione Enter; depois cole de novo.
    <br/><img src="./assets/initial.png" alt="Tela inicial" />
-4. Escolha o **modo** (não seguidores, todos que sigo ou gerenciar seguidores) e clique em **Iniciar escaneamento** (ou **Carregar escaneo anterior**).
-5. Durante o escaneamento, as contas vão aparecendo e o status de follow-back é atualizado.
+4. Clique em **Iniciar escaneamento** (ou **Carregar escaneamento anterior**). Depois, alterne a **visão** na barra lateral (não seguidores, todos que sigo ou quem me segue).
+5. Durante o escaneamento, as contas vão aparecendo e o status de seguir de volta é atualizado.
    <br/><img src="./assets/results.png" alt="Tela de resultados" />
 6. **Lista branca:** clique na foto do perfil para proteger contas.
 7. **Configurações:** exportar, importar, colar ou limpar a lista branca; ajustar intervalos entre requisições.
    <br/><img src="./assets/settings_whitelist.png" alt="Lista branca nas configurações" />
    <br/><img src="./assets/settings.png" alt="Configurações" />
-8. Marque os usuários desejados e use **Deixar de seguir** (ou **Remover seguidor**, no modo correspondente) quando o escaneamento terminar.
+8. Marque os usuários desejados e use **Deixar de seguir** (ou **Remover seguidor**, na visão correspondente) quando o escaneamento terminar.
 
 O **mesmo** script detecta a rede pelo site aberto (`instagram.com` vs `x.com`).
 
-<br/><img src="./assets/initial_x.png" alt="Interface no preview X" />
+<br/><img src="./assets/initial_x.png" alt="Interface na pré-visualização do X" />
 
 Detalhes de produto: [docs/PRODUTO.md](docs/PRODUTO.md) · X: [docs/PLATAFORMAS/x.md](docs/PLATAFORMAS/x.md).
 
@@ -103,13 +103,13 @@ Com `npm run dev`, o lab escuta em `0.0.0.0:8765`. No celular, na **mesma Wi‑F
 
 ## Funcionalidades
 
-- **Três modos:** não seguidores, revisar todos que você segue, listar seguidores para remover.
+- **Três visões após um escaneamento:** não seguidores, todos que você segue, quem te segue (remover seguidor).
 - **Escaneamento:** identifica quem não te segue de volta (modo padrão).
 - **Streaming progressivo:** resultados aparecem por lote, sem tela vazia em contas grandes.
 - **Cache local:** reabra escaneamentos concluídos sem refazer tudo.
 - **Proteção de sessão:** headers da web do Instagram (`X-ASBD-ID`, `X-CSRFToken`, etc.) para reduzir logouts forçados.
-- **Action block:** valida respostas de unfollow e para a fila em `feedback_required`.
-- **Rate limit:** pausas e backoff em HTTP 429 / 400.
+- **Bloqueio de ação:** valida respostas ao deixar de seguir e interrompe a fila em `feedback_required`.
+- **Limite de taxa:** pausas e espera em HTTP 429 / 400.
 - **Escaneamento incompleto:** unfollow em massa desabilitado se o scan foi interrompido.
 - **Lista branca persistente:** JSON, import/export e colagem em massa de usernames.
 - **Timings configuráveis** nas configurações.

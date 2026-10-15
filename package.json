@@ -4,13 +4,19 @@
     "type": "git",
     "url": "https://github.com/GabrielFSSantos/Socura.git"
   },
+  "allowScripts": {
+    "@parcel/watcher": true
+  },
   "scripts": {
     "webpack-build": "webpack --mode production",
     "update-index": "node scripts/update-index.js public/index.shell.html public/index.html dist/dist.js",
     "build": "npm run webpack-build && npm run update-index",
     "dev": "npm run build && node scripts/serve-lab.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "npm run test:graph-index && npm run test:x-list-parse && npm run test:x-http",
+    "test:unit": "npm run test:graph-index && npm run test:x-list-parse && npm run test:x-http && npm run test:scan-snapshots",
+    "test:scan-snapshots": "npx --yes tsx scripts/test-scan-snapshots.ts",
     "test:graph-index": "npx --yes tsx scripts/test-graph-index.ts",
     "test:x-list-parse": "npx --yes tsx scripts/test-x-list-parse.ts",
     "test:x-http": "npx --yes tsx scripts/test-x-http.ts",
@@ -25,24 +31,30 @@
     ]
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
+    "@babel/core": "^7.26.10",
     "@babel/plugin-transform-react-jsx": "^7.25.9",
-    "@playwright/test": "^1.62.1",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.64.1",
+    "@stylistic/eslint-plugin": "^4.4.1",
     "css-loader": "^6.11.0",
-    "eslint": "^8.57.1",
+    "eslint": "^10.12.0",
     "eslint-plugin-react": "^7.37.4",
-    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "sass": "^1.83.4",
     "sass-loader": "^16.0.8",
     "style-loader": "^3.3.4",
     "ts-loader": "^9.5.2",
     "typescript": "^5.7.3",
+    "typescript-eslint": "^8.46.2",
     "webpack": "^5.97.1",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "preact": "^10.25.4"
+  },
+  "overrides": {
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    }
   }
 }

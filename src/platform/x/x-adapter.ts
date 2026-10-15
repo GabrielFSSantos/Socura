@@ -1,56 +1,56 @@
-import { Typename, UserNode } from "../../model/user";
-import { Timings } from "../../model/timings";
+import { Typename, UserNode } from '../../model/user';
+import { Timings } from '../../model/timings';
 import {
   DEFAULT_TIME_BETWEEN_SEARCH_CYCLES,
   DEFAULT_TIME_BETWEEN_UNFOLLOWS,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_SEARCH_CYCLES,
   DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS,
   DEFAULT_USERS_PER_SEARCH_CYCLE,
-} from "../../constants/constants";
+} from '../../constants/constants';
 import {
   FOLLOWERS_PAGE_SAFETY_LIMIT_X,
   FOLLOWING_PAGE_SAFETY_LIMIT_X,
   X_STORAGE_KEY_PREFIX,
-} from "../../constants/x-constants";
-import { GraphPage, GraphUser, PlatformApiError, SocialPlatformAdapter, UnfollowResult } from "../types";
-import { fetchXListGraphQL } from "./x-graphql-list";
+} from '../../constants/x-constants';
+import { GraphPage, GraphUser, PlatformApiError, SocialPlatformAdapter, UnfollowResult } from '../types';
+import { fetchXListGraphQL } from './x-graphql-list';
 import {
   fetchXApiJson,
   hasXSessionCookies,
   parseViewerIdFromTwidCookie,
   resolveXViewerId,
   waitForXApiMirror,
-} from "./x-http";
-import { parseXListResponse, XListResponse } from "./x-list-parse";
+} from './x-http';
+import { parseXListResponse, XListResponse } from './x-list-parse';
 
 async function fetchXListRest(
-  kind: "followers" | "friends",
+  kind: 'followers' | 'friends',
   cursor?: string,
   pageSize = 50,
 ): Promise<GraphPage> {
   const viewerId = await resolveXViewerId();
   if (!viewerId) {
-    throw new PlatformApiError(401, "X session not found", false, "session");
+    throw new PlatformApiError(401, 'X session not found', false, 'session');
   }
-  const path = kind === "followers" ? "followers/list.json" : "friends/list.json";
+  const path = kind === 'followers' ? 'followers/list.json' : 'friends/list.json';
   const params = new URLSearchParams({
     user_id: viewerId,
     count: String(pageSize),
-    skip_status: "true",
-    include_user_entities: "false",
+    skip_status: 'true',
+    include_user_entities: 'false',
   });
-  if (cursor && cursor !== "0") {
-    params.set("cursor", cursor);
+  if (cursor && cursor !== '0') {
+    params.set('cursor', cursor);
   }
   const response = await fetchXApiJson(`${path}?${params.toString()}`);
   if (!response.ok) {
     const retryable = response.status === 429 || response.status >= 500;
-    const kindError = response.status === 401 || response.status === 403 ? "session" : "api";
+    const kindError = response.status === 401 || response.status === 403 ? 'session' : 'api';
     throw new PlatformApiError(
       response.status,
       `X returned HTTP ${response.status} for ${kind}`,
       retryable,
-      response.status === 429 ? "rate_limit" : kindError,
+      response.status === 429 ? 'rate_limit' : kindError,
     );
   }
   const data = (await response.json()) as XListResponse;
@@ -59,38 +59,38 @@ async function fetchXListRest(
 
 export type XPreflightResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly errorKind: "session" | "api" | "rate_limit" };
+  | { readonly ok: false; readonly errorKind: 'session' | 'api' | 'rate_limit' };
 
 export async function preflightXScanAccess(): Promise<XPreflightResult> {
   await waitForXApiMirror(12_000);
   const viewerId = await resolveXViewerId();
   if (!viewerId) {
-    return { ok: false, errorKind: "session" };
+    return { ok: false, errorKind: 'session' };
   }
-  const verify = await fetchXApiJson("account/verify_credentials.json?skip_status=true");
+  const verify = await fetchXApiJson('account/verify_credentials.json?skip_status=true');
   if (!verify.ok && verify.status !== 404) {
     if (verify.status === 401 || verify.status === 403) {
-      return { ok: false, errorKind: "session" };
+      return { ok: false, errorKind: 'session' };
     }
-    return { ok: false, errorKind: "api" };
+    return { ok: false, errorKind: 'api' };
   }
   try {
-    await fetchXList("followers", undefined, 20);
+    await fetchXList('followers', undefined, 20);
     return { ok: true };
   } catch (e) {
     if (e instanceof PlatformApiError) {
-      if (e.kind === "session") {
-        return { ok: false, errorKind: "session" };
+      if (e.kind === 'session') {
+        return { ok: false, errorKind: 'session' };
       }
-      if (e.kind === "rate_limit") {
-        return { ok: false, errorKind: "rate_limit" };
+      if (e.kind === 'rate_limit') {
+        return { ok: false, errorKind: 'rate_limit' };
       }
     }
-    return { ok: false, errorKind: "api" };
+    return { ok: false, errorKind: 'api' };
   }
 }
 
-async function fetchXList(kind: "followers" | "friends", cursor?: string, pageSize = 50): Promise<GraphPage> {
+async function fetchXList(kind: 'followers' | 'friends', cursor?: string, pageSize = 50): Promise<GraphPage> {
   try {
     return await fetchXListRest(kind, cursor, pageSize);
   } catch (e) {
@@ -98,7 +98,7 @@ async function fetchXList(kind: "followers" | "friends", cursor?: string, pageSi
       try {
         return await fetchXListGraphQL(kind, cursor, pageSize);
       } catch (graphqlError) {
-        console.warn("X GraphQL fallback failed:", graphqlError);
+        console.warn('X GraphQL fallback failed:', graphqlError);
         throw e;
       }
     }
@@ -108,8 +108,8 @@ async function fetchXList(kind: "followers" | "friends", cursor?: string, pageSi
 
 async function xFriendshipPost(path: string, userId: string): Promise<UnfollowResult> {
   const response = await fetchXApiJson(path, {
-    method: "POST",
-    headerKind: "postForm",
+    method: 'POST',
+    headerKind: 'postForm',
     body: new URLSearchParams({ user_id: userId }).toString(),
   });
   const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
@@ -125,19 +125,19 @@ async function xFriendshipPost(path: string, userId: string): Promise<UnfollowRe
 }
 
 export const xAdapter: SocialPlatformAdapter = {
-  id: "x",
-  networkLabel: "X",
-  documentTitle: "Socura — X",
+  id: 'x',
+  networkLabel: 'X',
+  documentTitle: 'Socura — X',
   storageKeyPrefix: X_STORAGE_KEY_PREFIX,
   followersPageSafetyLimit: FOLLOWERS_PAGE_SAFETY_LIMIT_X,
   followingPageSafetyLimit: FOLLOWING_PAGE_SAFETY_LIMIT_X,
-  hostGuardMessageKey: "hostGuardXOnly",
+  hostGuardMessageKey: 'hostGuardXOnly',
   capabilities: { removeFollower: true },
 
   assertRuntime(): void {
     if (!hasXSessionCookies()) {
       console.warn(
-        "Socura: cookie ct0/twid não visível no JS; se o scan falhar, recarregue x.com e tente de novo.",
+        'Socura: cookie ct0/twid não visível no JS; se o scan falhar, recarregue x.com e tente de novo.',
       );
     }
   },
@@ -147,11 +147,11 @@ export const xAdapter: SocialPlatformAdapter = {
   },
 
   fetchFollowersPage(cursor?: string, pageSize?: number): Promise<GraphPage> {
-    return fetchXList("followers", cursor, pageSize);
+    return fetchXList('followers', cursor, pageSize);
   },
 
   fetchFollowingPage(cursor?: string, pageSize?: number): Promise<GraphPage> {
-    return fetchXList("friends", cursor, pageSize);
+    return fetchXList('friends', cursor, pageSize);
   },
 
   graphUserToUserNode(user: GraphUser, followsViewer: boolean): UserNode {
@@ -185,11 +185,11 @@ export const xAdapter: SocialPlatformAdapter = {
   },
 
   async unfollow(userId: string): Promise<UnfollowResult> {
-    return xFriendshipPost("friendships/destroy.json", userId);
+    return xFriendshipPost('friendships/destroy.json', userId);
   },
 
   async removeFollower(userId: string): Promise<UnfollowResult> {
-    return xFriendshipPost("friendships/remove_follower.json", userId);
+    return xFriendshipPost('friendships/remove_follower.json', userId);
   },
 
   isTransientFetchError(error: unknown): boolean {
@@ -199,7 +199,7 @@ export const xAdapter: SocialPlatformAdapter = {
     if (error instanceof TypeError) {
       return true;
     }
-    return /fetch|network/i.test(String((error as Error)?.message ?? ""));
+    return /fetch|network/i.test(String((error as Error).message));
   },
 
   isActionBlockedUnfollow(result: UnfollowResult): boolean {

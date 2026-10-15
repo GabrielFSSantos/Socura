@@ -1,35 +1,37 @@
-import { AuditMode, BulkQueueAction } from "./audit-mode";
-import { UserNode } from "./user";
-import { ScanningTab } from "./scanning-tab";
-import { ScanningFilter } from "./scanning-filter";
-import { UnfollowLogEntry } from "./unfollow-log-entry";
-import { UnfollowFilter } from "./unfollow-filter";
+import { BulkQueueAction } from './audit-mode';
+import { ResultsLens, ScanSnapshots } from './scan-snapshots';
+import { UserNode } from './user';
+import { ScanningTab } from './scanning-tab';
+import { ScanningFilter } from './scanning-filter';
+import { UnfollowLogEntry } from './unfollow-log-entry';
+import { UnfollowFilter } from './unfollow-filter';
 
-type ScanningState = {
-  readonly status: "scanning";
-  readonly auditMode: AuditMode;
+interface ScanningState {
+  readonly status: 'scanning';
+  readonly resultsLens: ResultsLens;
   readonly page: number;
   readonly currentTab: ScanningTab;
   readonly searchTerm: string;
   readonly percentage: number;
   readonly results: readonly UserNode[];
+  readonly scanSnapshots: ScanSnapshots;
   readonly whitelistedResults: readonly UserNode[];
   readonly selectedResults: readonly UserNode[];
   readonly filter: ScanningFilter;
   readonly scanIncomplete?: boolean;
   readonly isScanningActive?: boolean;
   readonly totalScanned?: number;
-};
+}
 
-type UnfollowingState = {
-  readonly status: "unfollowing";
+interface UnfollowingState {
+  readonly status: 'unfollowing';
   readonly queueAction: BulkQueueAction;
   readonly searchTerm: string;
   readonly percentage: number;
   readonly selectedResults: readonly UserNode[];
   readonly unfollowLog: readonly UnfollowLogEntry[];
   readonly filter: UnfollowFilter;
-};
+}
 
-//TODO THIS TYPE OF MULTIPLE STATE NEEDS TO BE SEPARETED IN DIFFERENT FILES ASAP (Global state,unfollowing state, scanning state etc...)
+// TODO THIS TYPE OF MULTIPLE STATE NEEDS TO BE SEPARETED IN DIFFERENT FILES ASAP (Global state,unfollowing state, scanning state etc...)
 export type State = { readonly status: 'initial' } | ScanningState | UnfollowingState;

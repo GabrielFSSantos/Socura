@@ -1,9 +1,9 @@
-import { UserNode } from "../model/user";
-import { Timings } from "../model/timings";
-import { BulkQueueAction } from "../model/audit-mode";
-import { SocialPlatformAdapter } from "../platform/types";
-import { sleep } from "../utils/utils";
-import { t } from "../utils/i18n";
+import { UserNode } from '../model/user';
+import { Timings } from '../model/timings';
+import { BulkQueueAction } from '../model/audit-mode';
+import { SocialPlatformAdapter } from '../platform/types';
+import { sleep } from '../utils/utils';
+import { t } from '../utils/i18n';
 
 export interface ActionQueueCallbacks {
   onProgress: (entry: { user: UserNode; unfollowedSuccessfully: boolean }, percentage: number) => void;
@@ -27,7 +27,7 @@ export async function runActionQueue(
     const percentage = Math.round((counter / queue.length) * 100);
     try {
       const result =
-        action === "remove_follower"
+        action === 'remove_follower'
           ? await adapter.removeFollower(user.id)
           : await adapter.unfollow(user.id);
       const success = result.success;
@@ -55,7 +55,7 @@ export async function runActionQueue(
     );
     if (counter % 5 === 0) {
       callbacks.onSleepToast(
-        t("sleepingSafety", `${Math.round(timings.timeToWaitAfterFiveUnfollows / 60000)}m`),
+        t('sleepingSafety', `${Math.round(timings.timeToWaitAfterFiveUnfollows / 60000)}m`),
       );
       await sleep(timings.timeToWaitAfterFiveUnfollows);
       callbacks.onClearToast();
@@ -70,5 +70,5 @@ export async function runUnfollowQueue(
   timings: Timings,
   callbacks: ActionQueueCallbacks,
 ): Promise<void> {
-  return runActionQueue(adapter, "unfollow", users, timings, callbacks);
+  return runActionQueue(adapter, 'unfollow', users, timings, callbacks);
 }

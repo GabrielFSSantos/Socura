@@ -1,31 +1,32 @@
-import { X_API_BASE, X_WEB_BEARER_TOKEN } from "../../constants/x-constants";
-import { getCookie } from "../../utils/utils";
-import { PlatformApiError } from "../types";
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- guards defensivos no runtime do navegador */
+import { X_API_BASE, X_WEB_BEARER_TOKEN } from '../../constants/x-constants';
+import { getCookie } from '../../utils/utils';
+import { PlatformApiError } from '../types';
 
-export const X_CACHED_BEARER_SESSION_KEY = "iu_x_cached_bearer";
-export const X_API_HEADER_MIRROR_KEY = "iu_x_api_header_mirror";
-export const X_API_HEADER_MIRROR_AT_KEY = "iu_x_api_header_mirror_at";
+export const X_CACHED_BEARER_SESSION_KEY = 'iu_x_cached_bearer';
+export const X_API_HEADER_MIRROR_KEY = 'iu_x_api_header_mirror';
+export const X_API_HEADER_MIRROR_AT_KEY = 'iu_x_api_header_mirror_at';
 const MIRROR_TX_MAX_AGE_MS = 90_000;
 
-const CLIENT_UUID_STORAGE_KEY = "iu_x_client_uuid";
+const CLIENT_UUID_STORAGE_KEY = 'iu_x_client_uuid';
 const BEARER_PATTERN = /Bearer\s+(AAAAAAAAAAAAAAAAAAAAA[A-Za-z0-9%]+)/;
 const BEARER_INLINE_PATTERN = /(AAAAAAAAAAAAAAAAAAAAA[A-Za-z0-9%]{20,})/;
 
 const MIRROR_HEADER_ALLOWLIST = new Set([
-  "authorization",
-  "x-csrf-token",
-  "x-client-transaction-id",
-  "x-client-uuid",
-  "x-twitter-client-language",
-  "x-twitter-auth-type",
-  "x-twitter-active-user",
+  'authorization',
+  'x-csrf-token',
+  'x-client-transaction-id',
+  'x-client-uuid',
+  'x-twitter-client-language',
+  'x-twitter-auth-type',
+  'x-twitter-active-user',
 ]);
 
 let cachedViewerId: string | null | undefined;
 let cachedBearer: string | undefined;
 
 export function parseViewerIdFromTwidCookie(twid?: string | null): string | null {
-  const raw = twid ?? getCookie("twid");
+  const raw = twid ?? getCookie('twid');
   if (!raw) {
     return null;
   }
@@ -41,7 +42,7 @@ export function parseViewerIdFromTwidCookie(twid?: string | null): string | null
 /** Normaliza ct0 para o header x-csrf-token (valor em document.cookie pode estar encoded). */
 export function normalizeXCsrfToken(ct0Raw: string): string {
   if (!ct0Raw) {
-    return "";
+    return '';
   }
   try {
     return decodeURIComponent(ct0Raw);
@@ -75,7 +76,7 @@ export function captureMirroredHeadersFromRequestHeaders(
 }
 
 export function loadMirroredApiHeaders(): Record<string, string> {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return {};
   }
   try {
@@ -91,7 +92,7 @@ export function loadMirroredApiHeaders(): Record<string, string> {
 }
 
 export function persistMirroredApiHeaders(headers: Record<string, string>): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
   const filtered = captureMirroredHeadersFromRequestHeaders(headers);
@@ -109,7 +110,7 @@ export function persistMirroredApiHeaders(headers: Record<string, string>): void
 
 export function hasMinimalXApiMirror(): boolean {
   const mirror = loadMirroredApiHeaders();
-  return Boolean(mirror.authorization && mirror["x-csrf-token"]);
+  return Boolean(mirror.authorization && mirror['x-csrf-token']);
 }
 
 export async function waitForXApiMirror(timeoutMs = 20_000): Promise<boolean> {
@@ -127,15 +128,15 @@ export async function waitForXApiMirror(timeoutMs = 20_000): Promise<boolean> {
 }
 
 function clearMirroredTransactionId(): void {
-  if (typeof localStorage === "undefined") {
+  if (typeof localStorage === 'undefined') {
     return;
   }
   try {
     const mirror = loadMirroredApiHeaders();
-    if (!mirror["x-client-transaction-id"]) {
+    if (!mirror['x-client-transaction-id']) {
       return;
     }
-    const { "x-client-transaction-id": _drop, ...rest } = mirror;
+    const { 'x-client-transaction-id': _drop, ...rest } = mirror;
     localStorage.setItem(X_API_HEADER_MIRROR_KEY, JSON.stringify(rest));
   } catch {
     /* ignore */
@@ -143,7 +144,7 @@ function clearMirroredTransactionId(): void {
 }
 
 export function persistXBearerFromPage(): void {
-  if (typeof sessionStorage === "undefined") {
+  if (typeof sessionStorage === 'undefined') {
     return;
   }
   const fromPage = readBearerFromDom();
@@ -159,13 +160,13 @@ export function persistXBearerFromPage(): void {
 let xApiHeaderCaptureInstalled = false;
 
 function captureFromApiUrl(url: string, headers: Record<string, string>): void {
-  if (url.includes("/i/api/")) {
+  if (url.includes('/i/api/')) {
     persistMirroredApiHeaders(headers);
   }
 }
 
 function installXhrHeaderCapture(): void {
-  if (typeof XMLHttpRequest === "undefined") {
+  if (typeof XMLHttpRequest === 'undefined') {
     return;
   }
   const proto = XMLHttpRequest.prototype;
@@ -195,7 +196,7 @@ function installXhrHeaderCapture(): void {
   };
 
   proto.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
-    const url = (this as XMLHttpRequest & { _iuUrl?: string })._iuUrl ?? "";
+    const url = (this as XMLHttpRequest & { _iuUrl?: string })._iuUrl ?? '';
     const bag = (this as XMLHttpRequest & { _iuHeaders?: Record<string, string> })._iuHeaders;
     if (bag) {
       captureFromApiUrl(url, bag);
@@ -206,7 +207,7 @@ function installXhrHeaderCapture(): void {
 
 /** Espelha headers das requisições /i/api/ da própria SPA do X (fetch + XHR). */
 export function installXApiHeaderCapture(): void {
-  if (xApiHeaderCaptureInstalled || typeof window === "undefined") {
+  if (xApiHeaderCaptureInstalled || typeof window === 'undefined') {
     return;
   }
   const nativeFetch = window.fetch?.bind(window);
@@ -219,14 +220,14 @@ export function installXApiHeaderCapture(): void {
   window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     try {
       const url =
-        typeof input === "string"
+        typeof input === 'string'
           ? input
           : input instanceof URL
             ? input.href
             : input instanceof Request
               ? input.url
-              : "";
-      if (url.includes("/i/api/")) {
+              : '';
+      if (url.includes('/i/api/')) {
         const merged: Record<string, string> = {};
         if (input instanceof Request) {
           input.headers.forEach((v, k) => {
@@ -234,7 +235,7 @@ export function installXApiHeaderCapture(): void {
           });
         }
         if (init?.headers) {
-          const h = new Headers(init.headers as HeadersInit);
+          const h = new Headers(init.headers);
           h.forEach((v, k) => {
             merged[k] = v;
           });
@@ -245,27 +246,27 @@ export function installXApiHeaderCapture(): void {
       /* ignore */
     }
     return nativeFetch(input, init);
-  }) as typeof fetch;
+  });
 }
 
 function readBearerFromDom(): string | null {
-  if (typeof document === "undefined") {
+  if (typeof document === 'undefined') {
     return null;
   }
-  const fromRoot = extractBearerFromText(document.documentElement?.innerHTML ?? "");
+  const fromRoot = extractBearerFromText(document.documentElement?.innerHTML ?? '');
   if (fromRoot) {
     return fromRoot;
   }
-  for (const script of document.querySelectorAll("script")) {
-    const fromScript = extractBearerFromText(script.textContent ?? "");
+  for (const script of document.querySelectorAll('script')) {
+    const fromScript = extractBearerFromText(script.textContent ?? '');
     if (fromScript) {
       return fromScript;
     }
   }
-  if (typeof localStorage !== "undefined") {
+  if (typeof localStorage !== 'undefined') {
     for (const key of Object.keys(localStorage)) {
       try {
-        const value = localStorage.getItem(key) ?? "";
+        const value = localStorage.getItem(key) ?? '';
         const m = value.match(BEARER_INLINE_PATTERN);
         if (m?.[1]) {
           return m[1];
@@ -279,7 +280,7 @@ function readBearerFromDom(): string | null {
 }
 
 function readCachedBearerFromSession(): string | null {
-  if (typeof sessionStorage === "undefined") {
+  if (typeof sessionStorage === 'undefined') {
     return null;
   }
   try {
@@ -292,21 +293,21 @@ function readCachedBearerFromSession(): string | null {
 
 function resolveClientUuid(): string {
   const mirror = loadMirroredApiHeaders();
-  if (mirror["x-client-uuid"]) {
-    return mirror["x-client-uuid"];
+  if (mirror['x-client-uuid']) {
+    return mirror['x-client-uuid'];
   }
-  if (typeof sessionStorage === "undefined") {
-    return "00000000-0000-4000-8000-000000000000";
+  if (typeof sessionStorage === 'undefined') {
+    return '00000000-0000-4000-8000-000000000000';
   }
   try {
     let id = sessionStorage.getItem(CLIENT_UUID_STORAGE_KEY);
-    if (!id && typeof crypto !== "undefined" && crypto.randomUUID) {
+    if (!id && typeof crypto !== 'undefined' && crypto.randomUUID) {
       id = crypto.randomUUID();
       sessionStorage.setItem(CLIENT_UUID_STORAGE_KEY, id);
     }
-    return id ?? "00000000-0000-4000-8000-000000000000";
+    return id ?? '00000000-0000-4000-8000-000000000000';
   } catch {
-    return "00000000-0000-4000-8000-000000000000";
+    return '00000000-0000-4000-8000-000000000000';
   }
 }
 
@@ -326,8 +327,8 @@ export function resolveXBearerToken(): string {
     return fromPage;
   }
   const mirror = loadMirroredApiHeaders();
-  if (mirror.authorization?.startsWith("Bearer ")) {
-    const token = mirror.authorization.slice("Bearer ".length);
+  if (mirror.authorization?.startsWith('Bearer ')) {
+    const token = mirror.authorization.slice('Bearer '.length);
     if (token && token !== X_WEB_BEARER_TOKEN) {
       cachedBearer = token;
       return token;
@@ -341,31 +342,31 @@ export function resetXHttpSessionCache(): void {
   cachedBearer = undefined;
 }
 
-export type XApiHeaderKind = "get" | "postForm";
+export type XApiHeaderKind = 'get' | 'postForm';
 
 export function buildXApiHeaders(kind: XApiHeaderKind): Record<string, string> {
   const mirror = loadMirroredApiHeaders();
-  const ct0 = mirror["x-csrf-token"] ?? normalizeXCsrfToken(getCookie("ct0") ?? "");
+  const ct0 = mirror['x-csrf-token'] ?? normalizeXCsrfToken(getCookie('ct0') ?? '');
   const bearer = resolveXBearerToken();
   const lang =
-    mirror["x-twitter-client-language"] ??
-    (typeof navigator !== "undefined" && navigator.language ? navigator.language : "pt-BR");
+    mirror['x-twitter-client-language'] ??
+    (typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'pt-BR');
   const headers: Record<string, string> = {
-    authorization: mirror.authorization ?? `Bearer ${bearer}`,
-    "x-csrf-token": ct0,
-    "x-twitter-auth-type": mirror["x-twitter-auth-type"] ?? "OAuth2Session",
-    "x-twitter-active-user": mirror["x-twitter-active-user"] ?? "yes",
-    "x-twitter-client-language": lang,
-    "x-client-uuid": resolveClientUuid(),
-    accept: "*/*",
-    "accept-language": lang,
-    referer: "https://x.com/",
-    origin: "https://x.com",
+    'authorization': mirror.authorization ?? `Bearer ${bearer}`,
+    'x-csrf-token': ct0,
+    'x-twitter-auth-type': mirror['x-twitter-auth-type'] ?? 'OAuth2Session',
+    'x-twitter-active-user': mirror['x-twitter-active-user'] ?? 'yes',
+    'x-twitter-client-language': lang,
+    'x-client-uuid': resolveClientUuid(),
+    'accept': '*/*',
+    'accept-language': lang,
+    'referer': 'https://x.com/',
+    'origin': 'https://x.com',
   };
   let mirrorAge = Number.POSITIVE_INFINITY;
-  if (typeof localStorage !== "undefined") {
+  if (typeof localStorage !== 'undefined') {
     try {
-      const at = Number(localStorage.getItem(X_API_HEADER_MIRROR_AT_KEY) ?? "0");
+      const at = Number(localStorage.getItem(X_API_HEADER_MIRROR_AT_KEY) ?? '0');
       if (at > 0) {
         mirrorAge = Date.now() - at;
       }
@@ -373,11 +374,11 @@ export function buildXApiHeaders(kind: XApiHeaderKind): Record<string, string> {
       /* ignore */
     }
   }
-  if (mirror["x-client-transaction-id"] && mirrorAge < MIRROR_TX_MAX_AGE_MS) {
-    headers["x-client-transaction-id"] = mirror["x-client-transaction-id"];
+  if (mirror['x-client-transaction-id'] && mirrorAge < MIRROR_TX_MAX_AGE_MS) {
+    headers['x-client-transaction-id'] = mirror['x-client-transaction-id'];
   }
-  if (kind === "postForm") {
-    headers["content-type"] = "application/x-www-form-urlencoded";
+  if (kind === 'postForm') {
+    headers['content-type'] = 'application/x-www-form-urlencoded';
   }
   return headers;
 }
@@ -387,25 +388,25 @@ export function buildXApiHeaders(kind: XApiHeaderKind): Record<string, string> {
  * mas ainda é enviado em fetch com credentials:include.
  */
 export function hasXSessionCookies(): boolean {
-  if (getCookie("ct0")) {
+  if (getCookie('ct0')) {
     return true;
   }
-  if (getCookie("twid")) {
+  if (getCookie('twid')) {
     return true;
   }
-  return Boolean(getCookie("auth_token"));
+  return Boolean(getCookie('auth_token'));
 }
 
 export async function fetchXApiJson(
   path: string,
   init: RequestInit & { headerKind?: XApiHeaderKind } = {},
 ): Promise<Response> {
-  const headerKind = init.headerKind ?? (init.method === "POST" ? "postForm" : "get");
+  const headerKind = init.headerKind ?? (init.method === 'POST' ? 'postForm' : 'get');
   const { headerKind: _drop, ...rest } = init;
-  const url = path.startsWith("http") ? path : `${X_API_BASE}/${path.replace(/^\//, "")}`;
+  const url = path.startsWith('http') ? path : `${X_API_BASE}/${path.replace(/^\//, '')}`;
   const doFetch = () =>
     fetch(url, {
-      credentials: "include",
+      credentials: 'include',
       ...rest,
       headers: {
         ...buildXApiHeaders(headerKind),
@@ -416,7 +417,7 @@ export async function fetchXApiJson(
   let response = await doFetch();
   if (
     (response.status === 401 || response.status === 403) &&
-    loadMirroredApiHeaders()["x-client-transaction-id"]
+    loadMirroredApiHeaders()['x-client-transaction-id']
   ) {
     clearMirroredTransactionId();
     response = await doFetch();
@@ -433,7 +434,7 @@ export async function resolveXViewerId(): Promise<string | null> {
     cachedViewerId = fromTwid;
     return fromTwid;
   }
-  const res = await fetchXApiJson("account/verify_credentials.json?skip_status=true");
+  const res = await fetchXApiJson('account/verify_credentials.json?skip_status=true');
   if (!res.ok) {
     cachedViewerId = null;
     return null;
@@ -447,11 +448,11 @@ export async function resolveXViewerId(): Promise<string | null> {
 export async function assertXSession(): Promise<void> {
   const viewerId = await resolveXViewerId();
   if (!viewerId) {
-    throw new PlatformApiError(401, "X viewer id not found", false, "session");
+    throw new PlatformApiError(401, 'X viewer id not found', false, 'session');
   }
-  const probe = await fetchXApiJson("account/verify_credentials.json?skip_status=true");
+  const probe = await fetchXApiJson('account/verify_credentials.json?skip_status=true');
   if (!probe.ok) {
-    const kind = probe.status === 401 || probe.status === 403 ? "session" : "api";
+    const kind = probe.status === 401 || probe.status === 403 ? 'session' : 'api';
     throw new PlatformApiError(probe.status, `X session probe HTTP ${probe.status}`, false, kind);
   }
 }

@@ -27,7 +27,7 @@
         <span class="eyebrow">Script para o navegador</span>
         <h1>Copie e cole na rede social</h1>
         <p class="lead">
-          Um único bundle para <strong>Instagram</strong> e <strong>X</strong>. Tudo roda no seu navegador — sem extensão e sem enviar dados a servidores do projeto.
+          Um único pacote de script para <strong>Instagram</strong> e <strong>X</strong>. Tudo roda no seu navegador — sem extensão e sem enviar dados a servidores do projeto.
         </p>
         <ol class="landing-steps">
           <li>Copie o código com o botão abaixo.</li>
@@ -49,9 +49,9 @@
                 d="M5 2H19C19.5523 2 20 2.44772 20 3V22.1433C20 22.4382 19.823 22.7052 19.5521 22.822C19.2812 22.9388 18.9697 22.8943 18.7496 22.7061L12.75 17.5678C12.3499 17.225 11.6501 17.225 11.25 17.5678L5.25044 22.7061C5.03027 22.8943 4.71881 22.9388 4.44789 22.822C4.17702 22.7052 4 22.4382 4 22.1433V3C4 2.44772 4.44772 2 5 2Z"
                 fill="currentColor" />
             </svg>
-            Bookmarklet
+            Atalho nos favoritos
           </a>
-          <span class="landing-note">Arraste o bookmarklet para a barra de favoritos e execute no site logado.</span>
+          <span class="landing-note">Arraste o atalho para a barra de favoritos e execute no site logado.</span>
         </div>
       </section>
 
@@ -101,7 +101,7 @@
           await navigator.clipboard.writeText(instagramScript);
           overlayControl("show");
         } catch (error) {
-          console.error("Failed to copy text: ", error);
+          console.error("Falha ao copiar texto: ", error);
         }
       } else {
         console.log("instagramScript is not defined or empty — run npm run build");

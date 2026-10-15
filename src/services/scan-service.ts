@@ -1,13 +1,13 @@
-import { AuditMode } from "../model/audit-mode";
-import { UserNode } from "../model/user";
-import { Timings } from "../model/timings";
-import { CHECKS_BEFORE_LONG_SLEEP, RATE_LIMIT_COOLDOWN_SECONDS } from "../constants/constants";
-import { addGraphUserToIndex, createGraphUserIndex, isGraphUserInIndex } from "../platform/graph-index";
-import { GraphUser, PlatformApiError, SocialPlatformAdapter } from "../platform/types";
-import { preflightXScanAccess } from "../platform/x/x-adapter";
-import { resetXHttpSessionCache, waitForXApiMirror } from "../platform/x/x-http";
-import { sleep } from "../utils/utils";
-import { t } from "../utils/i18n";
+import { UserNode } from '../model/user';
+import { ScanSnapshots } from '../model/scan-snapshots';
+import { Timings } from '../model/timings';
+import { CHECKS_BEFORE_LONG_SLEEP, RATE_LIMIT_COOLDOWN_SECONDS } from '../constants/constants';
+import { addGraphUserToIndex, createGraphUserIndex, isGraphUserInIndex } from '../platform/graph-index';
+import { GraphUser, PlatformApiError, SocialPlatformAdapter } from '../platform/types';
+import { preflightXScanAccess } from '../platform/x/x-adapter';
+import { resetXHttpSessionCache, waitForXApiMirror } from '../platform/x/x-http';
+import { sleep } from '../utils/utils';
+import { t } from '../utils/i18n';
 
 export interface ScanCallbacks {
   onToast: (text: string) => void;
@@ -16,12 +16,13 @@ export interface ScanCallbacks {
   onFollowingProgress: (
     checkedCount: number,
     percentage: number,
-    newUsers: readonly UserNode[],
+    partialSnapshots: ScanSnapshots,
+    newNonFollowers: readonly UserNode[],
   ) => void;
   onFollowersFailed: () => void;
   onFollowingFailedEarly: () => void;
   onComplete: (result: {
-    results: readonly UserNode[];
+    snapshots: ScanSnapshots;
     checkedCount: number;
     scanIsComplete: boolean;
   }) => void;
@@ -30,17 +31,16 @@ export interface ScanCallbacks {
 
 export async function runAccountScan(
   adapter: SocialPlatformAdapter,
-  auditMode: AuditMode,
   timings: Timings,
   callbacks: ScanCallbacks,
 ): Promise<void> {
-  if (adapter.id === "x") {
+  if (adapter.id === 'x') {
     resetXHttpSessionCache();
-    callbacks.onToast(t("xPreparingScan"));
+    callbacks.onToast(t('xPreparingScan'));
     await waitForXApiMirror(18_000);
     let preflight = await preflightXScanAccess();
-    for (let attempt = 0; attempt < 2 && !preflight.ok && preflight.errorKind === "session"; attempt++) {
-      callbacks.onToast(t("xPreparingScan"));
+    for (let attempt = 0; attempt < 2 && !preflight.ok && preflight.errorKind === 'session'; attempt++) {
+      callbacks.onToast(t('xPreparingScan'));
       await sleep(2000);
       await waitForXApiMirror(8000);
       preflight = await preflightXScanAccess();
@@ -49,7 +49,7 @@ export async function runAccountScan(
     if (!preflight.ok) {
       callbacks.onFollowersFailed();
       callbacks.onToast(
-        preflight.errorKind === "session" ? t("scanFailedXSession") : t("scanFailedXApi"),
+        preflight.errorKind === 'session' ? t('scanFailedXSession') : t('scanFailedXApi'),
       );
       return;
     }
@@ -58,16 +58,16 @@ export async function runAccountScan(
   const viewerId = adapter.getViewerId();
   if (!viewerId) {
     callbacks.onFollowingFailedEarly();
-    callbacks.onToast(t("scanFailedFollowing"));
+    callbacks.onToast(t('scanFailedFollowing'));
     return;
   }
 
   type PageResult =
-    | { readonly ok: true; readonly page: Awaited<ReturnType<SocialPlatformAdapter["fetchFollowersPage"]>> }
+    | { readonly ok: true; readonly page: Awaited<ReturnType<SocialPlatformAdapter['fetchFollowersPage']>> }
     | { readonly ok: false; readonly blocked: boolean };
 
   const fetchPageWithRetry = async (
-    kind: "followers" | "following",
+    kind: 'followers' | 'following',
     cursor?: string,
   ): Promise<PageResult> => {
     let retries = 0;
@@ -75,7 +75,7 @@ export async function runAccountScan(
     while (true) {
       try {
         const page =
-          kind === "followers"
+          kind === 'followers'
             ? await adapter.fetchFollowersPage(cursor, timings.usersPerSearchCycle)
             : await adapter.fetchFollowingPage(cursor, timings.usersPerSearchCycle);
         return { ok: true, page };
@@ -88,7 +88,7 @@ export async function runAccountScan(
             ? RATE_LIMIT_COOLDOWN_SECONDS * retries
             : 5 * retries;
           for (let sec = waitSeconds; sec > 0; sec--) {
-            callbacks.onToast(t("rateLimitPause", sec));
+            callbacks.onToast(t('rateLimitPause', sec));
             await sleep(1000);
           }
           callbacks.onClearToast();
@@ -118,14 +118,14 @@ export async function runAccountScan(
         0,
         timings.timeToWaitAfterFiveSearchCycles + (Math.random() * 10000 - 5000),
       );
-      callbacks.onToast(t("sleepingSafety", Math.round(longSleepVar / 1000)));
+      callbacks.onToast(t('sleepingSafety', Math.round(longSleepVar / 1000)));
       await sleep(longSleepVar);
       callbacks.onClearToast();
     }
   };
 
   const fetchList = async (
-    kind: "followers" | "following",
+    kind: 'followers' | 'following',
     pageSafetyLimit: number,
     onPageUsers: (pageUsers: readonly GraphUser[]) => Promise<boolean>,
   ): Promise<boolean> => {
@@ -152,130 +152,82 @@ export async function runAccountScan(
     }
   };
 
-  const results: UserNode[] = [];
+  const nonFollowers: UserNode[] = [];
+  const followingAll: UserNode[] = [];
+  const followersAll: UserNode[] = [];
   let checkedCount = 0;
-
-  if (auditMode === "followers_manage") {
-    if (!adapter.capabilities.removeFollower) {
-      callbacks.onFollowersFailed();
-      callbacks.onToast(t("removeFollowerUnsupported"));
-      return;
-    }
-    const followersCompleted = await fetchList(
-      "followers",
-      adapter.followersPageSafetyLimit,
-      async pageUsers => {
-        const batch: UserNode[] = [];
-        for (const user of pageUsers) {
-          const node = adapter.graphUserToUserNode(user, true);
-          results.push(node);
-          batch.push(node);
-          checkedCount++;
-        }
-        const progress = Math.min(99, Math.round(100 * (1 - 1 / (1 + checkedCount / 150))));
-        callbacks.onFollowingProgress(checkedCount, progress, batch);
-        callbacks.onToast(t("indexingFollowersProgress", checkedCount));
-        return true;
-      },
-    );
-    if (!followersCompleted && checkedCount === 0) {
-      callbacks.onFollowersFailed();
-      callbacks.onToast(t("scanFailedFollowers"));
-      return;
-    }
-    callbacks.onComplete({ results, checkedCount, scanIsComplete: followersCompleted });
-    callbacks.onToast(
-      followersCompleted ? t("scanCompleted") : t("partialScanInterrupted", checkedCount),
-    );
-    return;
-  }
-
-  if (auditMode === "following_all") {
-    const followingCompleted = await fetchList(
-      "following",
-      adapter.followingPageSafetyLimit,
-      async pageUsers => {
-        const batch: UserNode[] = [];
-        for (const user of pageUsers) {
-          const node = adapter.graphUserToUserNode(user, false);
-          results.push(node);
-          batch.push(node);
-          checkedCount++;
-        }
-        const progress = Math.min(99, Math.round(100 * (1 - 1 / (1 + checkedCount / 150))));
-        callbacks.onFollowingProgress(checkedCount, progress, batch);
-        callbacks.onToast(t("scanningFollowingProgress", checkedCount));
-        return true;
-      },
-    );
-    if (!followingCompleted && checkedCount === 0) {
-      callbacks.onFollowingFailedEarly();
-      callbacks.onToast(t("scanFailedFollowing"));
-      return;
-    }
-    callbacks.onComplete({ results, checkedCount, scanIsComplete: followingCompleted });
-    callbacks.onToast(
-      followingCompleted ? t("scanCompleted") : t("partialScanInterrupted", checkedCount),
-    );
-    return;
-  }
 
   const followerIndex = createGraphUserIndex();
   let followersCount = 0;
 
   const followersCompleted = await fetchList(
-    "followers",
+    'followers',
     adapter.followersPageSafetyLimit,
     async pageUsers => {
       for (const user of pageUsers) {
         addGraphUserToIndex(followerIndex, user);
+        if (adapter.capabilities.removeFollower) {
+          followersAll.push(adapter.graphUserToUserNode(user, true));
+        }
         followersCount++;
       }
       const followersProgress = Math.min(49, Math.round(50 * (1 - 1 / (1 + followersCount / 150))));
       callbacks.onFollowersProgress(followersCount, followersProgress);
-      callbacks.onToast(t("indexingFollowersProgress", followersCount));
+      callbacks.onToast(t('indexingFollowersProgress', followersCount));
       return true;
     },
   );
 
   if (!followersCompleted) {
     callbacks.onFollowersFailed();
-    callbacks.onToast(t("scanFailedFollowers"));
+    callbacks.onToast(t('scanFailedFollowers'));
     return;
   }
 
   callbacks.onFollowersProgress(followersCount, 50);
 
   const followingCompleted = await fetchList(
-    "following",
+    'following',
     adapter.followingPageSafetyLimit,
     async pageUsers => {
-      const batch: UserNode[] = [];
+      const batchNonFollowers: UserNode[] = [];
       for (const user of pageUsers) {
         const followsViewer = isGraphUserInIndex(followerIndex, user);
+        const node = adapter.graphUserToUserNode(user, followsViewer);
+        followingAll.push(node);
         if (!followsViewer) {
-          const node = adapter.graphUserToUserNode(user, false);
-          results.push(node);
-          batch.push(node);
+          nonFollowers.push(node);
+          batchNonFollowers.push(node);
         }
         checkedCount++;
       }
       const followingProgress = Math.min(99, 50 + Math.round(50 * (1 - 1 / (1 + checkedCount / 150))));
-      callbacks.onFollowingProgress(checkedCount, followingProgress, batch);
-      callbacks.onToast(t("scanningFollowingProgress", checkedCount));
+      const partialSnapshots: ScanSnapshots = {
+        nonFollowers: [...nonFollowers],
+        followingAll: [...followingAll],
+        followersAll: [...followersAll],
+      };
+      callbacks.onFollowingProgress(checkedCount, followingProgress, partialSnapshots, batchNonFollowers);
+      callbacks.onToast(t('scanningFollowingProgress', checkedCount));
       return true;
     },
   );
 
   if (!followingCompleted && checkedCount === 0) {
     callbacks.onFollowingFailedEarly();
-    callbacks.onToast(t("scanFailedFollowing"));
+    callbacks.onToast(t('scanFailedFollowing'));
     return;
   }
 
+  const snapshots: ScanSnapshots = {
+    nonFollowers: [...nonFollowers],
+    followingAll: [...followingAll],
+    followersAll: [...followersAll],
+  };
+
   const scanIsComplete = followingCompleted;
-  callbacks.onComplete({ results, checkedCount, scanIsComplete });
+  callbacks.onComplete({ snapshots, checkedCount, scanIsComplete });
   callbacks.onToast(
-    scanIsComplete ? t("scanCompleted") : t("partialScanInterrupted", checkedCount),
+    scanIsComplete ? t('scanCompleted') : t('partialScanInterrupted', checkedCount),
   );
 }

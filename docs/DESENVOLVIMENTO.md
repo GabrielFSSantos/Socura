@@ -5,8 +5,9 @@
 | Comando | Quando usar |
 | --- | --- |
 | **`npm run dev`** | Rodar o lab local (`http://127.0.0.1:8765`) — copiar bundle para IG/X |
-| **`npm test`** | Testes **sem login**: unitários + E2E preview (mock) — **gate CI** |
-| **`npm run test:session`** | Testes **logados**: scan, modos, whitelist no X e Instagram reais |
+| **`npm run lint`** | ESLint 10 em `src/` (flat config; requer Node 20+, ver `.nvmrc`) |
+| **`npm test`** | Testes **sem login**: unitários + E2E de pré-visualização (dados fictícios) — **gate CI** |
+| **`npm run test:session`** | Testes **logados**: escaneamento, visões, lista branca no X e Instagram reais |
 | `npm run build` | Só gerar `dist/` e `public/index.html` (Pages) |
 | `npm run test:verify` | Fechamento: `build` + `npm test` + `test:session` |
 | `npm run auth -- --platform=x\|instagram` | Gravar sessão no perfil E2E (opcional antes de `test:session`) |
@@ -18,10 +19,14 @@ Uso interno / CI: `test:unit`, `test:e2e`, `test:graph-index`, etc. — chamados
 | Camada | Onde | Login |
 | --- | --- | --- |
 | Unitários | `scripts/test-*.ts` via `test:unit` | Não |
-| Preview | `e2e/preview/` | Não (mocks em `preview.html`) |
+| Pré-visualização | `e2e/preview/` | Não (dados fictícios em `preview.html`) |
 | Sessão | `e2e/session/` (`session-x`, depois `session-ig`) | Sim (Chrome, perfis em `e2e/.auth/`) |
 
 Live destrutivo (unfollow/remover 1 conta): só com `E2E_LIVE_UNFOLLOW=1` ou `E2E_LIVE_REMOVE_FOLLOWER=1` + IDs — ver `e2e/session/fixtures.test-users.json.example`.
+
+### E2E de pré-visualização e Playwright (WSL)
+
+Os testes de pré-visualização usam Chromium via variável `PLAYWRIGHT_BROWSERS_PATH` (runtime compartilhado na máquina, não por repo). Na primeira vez ou após subir `@playwright/test`, instale browsers com o script global documentado no harness do projeto (`dev-runtime-install` / `dev-runtime-check`). Não use `npx playwright install` na raiz do Socura.
 
 ## Gate (meta-workspace)
 
@@ -29,7 +34,7 @@ Live destrutivo (unfollow/remover 1 conta): só com `E2E_LIVE_UNFOLLOW=1` ou `E2
 ~/GitHub/Workspaces/socura/harness/checks/run-gate.sh
 ```
 
-`npm ci` → `build` → `test:unit` → preview E2E.
+`npm ci` → `build` → `lint` → `test:unit` → dev-runtime-check → E2E de pré-visualização.
 
 ## Adicionar uma rede (ex.: Facebook)
 
@@ -37,8 +42,8 @@ Live destrutivo (unfollow/remover 1 conta): só com `E2E_LIVE_UNFOLLOW=1` ou `E2
 2. **`src/platform/facebook/`** — adapter + HTTP helpers (espelhar IG/X).
 3. **`src/platform/resolve-adapter.ts`** — hostname → adapter.
 4. **`src/main.tsx`** — host guard e título se necessário.
-5. **Preview opcional:** `public/preview-*.html` + ramo em `preview-adapter.ts`.
-6. **Testes:** 1 spec em `e2e/preview/` (mock) + 1 em `e2e/session/fb-*.spec.ts` (sessão); fixture `platform` se precisar de novo valor em `fixtures.ts`.
+5. **Pré-visualização opcional:** `public/preview-*.html` + ramo em `preview-adapter.ts`.
+6. **Testes:** 1 spec em `e2e/preview/` (fictício) + 1 em `e2e/session/fb-*.spec.ts` (sessão); fixture `platform` se precisar de novo valor em `fixtures.ts`.
 7. **`docs/PLATAFORMAS/facebook.md`** — endpoints e sessão.
 
 ## Estrutura do código

@@ -1,36 +1,44 @@
-import React, { ChangeEvent, useEffect, useState } from "react";
-import { render } from "react-dom";
-import "./styles.scss";
+import React, { ChangeEvent, useEffect, useState } from 'react';
+import { render } from 'react-dom';
+import './styles.scss';
 
-import { Typename, UserNode } from "./model/user";
-import { Toast } from "./components/Toast";
-import { UserCheckIcon } from "./components/icons/UserCheckIcon";
-import { UserUncheckIcon } from "./components/icons/UserUncheckIcon";
-import { assertUnreachable, getCurrentPageUnfollowers, getUsersForDisplay } from "./utils/utils";
+import { Typename, UserNode } from './model/user';
+import { Toast } from './components/Toast';
+import { UserCheckIcon } from './components/icons/UserCheckIcon';
+import { UserUncheckIcon } from './components/icons/UserUncheckIcon';
+import { assertUnreachable, getCurrentPageUnfollowers, getUsersForDisplay } from './utils/utils';
 import {
   installXApiHeaderCapture,
   persistXBearerFromPage,
   waitForXApiMirror,
-} from "./platform/x/x-http";
-import { resolveAdapter } from "./platform/resolve-adapter";
-import { getActiveAdapter, setActiveAdapter } from "./platform/runtime";
-import { AuditMode, DEFAULT_AUDIT_MODE } from "./model/audit-mode";
-import { runAccountScan } from "./services/scan-service";
-import { runActionQueue } from "./services/action-queue";
-import { NotSearching } from "./components/NotSearching";
-import { State } from "./model/state";
-import { Searching } from "./components/Searching";
-import { Toolbar } from "./components/Toolbar";
-import { Unfollowing } from "./components/Unfollowing";
-import { Timings } from "./model/timings";
-import { loadCachedScanResults, loadTimings, loadWhitelist, saveCachedScanResults, saveTimings, saveWhitelist } from "./utils/whitelist-manager";
-import { DEFAULT_MAX_BULK_ACTIONS_PER_SESSION } from "./constants/constants";
-import { t } from "./utils/i18n";
+} from './platform/x/x-http';
+import { resolveAdapter } from './platform/resolve-adapter';
+import { getActiveAdapter, setActiveAdapter } from './platform/runtime';
+import { DEFAULT_AUDIT_MODE } from './model/audit-mode';
+import {
+  buildPreviewSnapshots,
+  EMPTY_SCAN_SNAPSHOTS,
+  ResultsLens,
+  resultsForLens,
+  ScanSnapshots,
+} from './model/scan-snapshots';
+import { DEFAULT_SCANNING_FILTER } from './model/scanning-filter';
+import { runAccountScan } from './services/scan-service';
+import { runActionQueue } from './services/action-queue';
+import { NotSearching } from './components/NotSearching';
+import { State } from './model/state';
+import { Searching } from './components/Searching';
+import { Toolbar } from './components/Toolbar';
+import { Unfollowing } from './components/Unfollowing';
+import { Timings } from './model/timings';
+import { loadCachedScanResults, loadTimings, loadWhitelist, saveCachedScanResults, saveTimings, saveWhitelist } from './utils/whitelist-manager';
+import { DEFAULT_MAX_BULK_ACTIONS_PER_SESSION } from './constants/constants';
+import { t } from './utils/i18n';
 
-const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const LOCAL_PREVIEW_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 const isLocalPreview = LOCAL_PREVIEW_HOSTS.has(location.hostname);
-const previewPlatformParam = new URLSearchParams(location.search).get("platform");
-const isPreviewX = previewPlatformParam === "x";
+const previewPlatformParam = new URLSearchParams(location.search).get('platform');
+const isPreviewX = previewPlatformParam === 'x';
 
 const _avatarUrl = (seed: string): string =>
   `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0f172a,1f2937,312e81&fontFamily=Verdana`;
@@ -65,54 +73,58 @@ const _createPreviewUser = (
   },
 });
 
+const countSnapshotAccounts = (snapshots: ScanSnapshots): number =>
+  Math.max(
+    snapshots.nonFollowers.length,
+    snapshots.followingAll.length,
+    snapshots.followersAll.length,
+  );
+
 const _getPreviewUsers = (): readonly UserNode[] => [
-  _createPreviewUser("1", "alina.frames", "Alina Moreno", { isVerified: true }),
-  _createPreviewUser("2", "brassandbone", "Theo Walsh", { isPrivate: true }),
-  _createPreviewUser("3", "citrus.archive", "Mara Kim", { followsViewer: true }),
-  _createPreviewUser("4", "dawnledger", "Jon Bell", { isPrivate: true }),
-  _createPreviewUser("5", "elias.market", "Elias Noor", { isVerified: true }),
-  _createPreviewUser("6", "fieldnotes.studio", "Nadia Reyes"),
-  _createPreviewUser("7", "glint.supply", "Remy Park", { followsViewer: true }),
-  _createPreviewUser("8", "harbor.sequence", "Ivy Chen", { isPrivate: true }),
-  _createPreviewUser("9", "inkline.daily", "Sofia Grant"),
-  _createPreviewUser("10", "juniper.signal", "Cal Reed", { isVerified: true }),
-  _createPreviewUser("11", "keystone.labs", "Mina Torres"),
-  _createPreviewUser("12", "lowlight.club", "Owen Voss", { isPrivate: true }),
+  _createPreviewUser('1', 'alina.frames', 'Alina Moreno', { isVerified: true }),
+  _createPreviewUser('2', 'brassandbone', 'Theo Walsh', { isPrivate: true }),
+  _createPreviewUser('3', 'citrus.archive', 'Mara Kim', { followsViewer: true }),
+  _createPreviewUser('4', 'dawnledger', 'Jon Bell', { isPrivate: true }),
+  _createPreviewUser('5', 'elias.market', 'Elias Noor', { isVerified: true }),
+  _createPreviewUser('6', 'fieldnotes.studio', 'Nadia Reyes'),
+  _createPreviewUser('7', 'glint.supply', 'Remy Park', { followsViewer: true }),
+  _createPreviewUser('8', 'harbor.sequence', 'Ivy Chen', { isPrivate: true }),
+  _createPreviewUser('9', 'inkline.daily', 'Sofia Grant'),
+  _createPreviewUser('10', 'juniper.signal', 'Cal Reed', { isVerified: true }),
+  _createPreviewUser('11', 'keystone.labs', 'Mina Torres'),
+  _createPreviewUser('12', 'lowlight.club', 'Owen Voss', { isPrivate: true }),
 ];
 
 
-
 function App() {
+  const previewParams = new URLSearchParams(location.search);
+  const previewLens =
+    (previewParams.get('mode') as ResultsLens | null) ?? DEFAULT_AUDIT_MODE;
+  const previewUsers = _getPreviewUsers();
+  const previewSnapshots = buildPreviewSnapshots(previewUsers);
+
   const [state, setState] = useState<State>({
     ...(
       isLocalPreview &&
-        (new URLSearchParams(location.search).get("preview") === "scanning" ||
-          new URLSearchParams(location.search).get("preview") === "scanning-incomplete")
+        (previewParams.get('preview') === 'scanning' ||
+          previewParams.get('preview') === 'scanning-incomplete')
         ? {
-          status: "scanning",
-          auditMode:
-            (new URLSearchParams(location.search).get("mode") as AuditMode | null) ??
-            "non_followers",
+          status: 'scanning',
+          resultsLens: previewLens,
           page: 1,
-          searchTerm: "",
-          currentTab: "non_whitelisted",
+          searchTerm: '',
+          currentTab: 'non_whitelisted',
           percentage: 100,
-          results: _getPreviewUsers(),
-          selectedResults: _getPreviewUsers().slice(0, 3),
-          whitelistedResults: _getPreviewUsers().slice(10, 12),
-          scanIncomplete:
-            new URLSearchParams(location.search).get("preview") === "scanning-incomplete",
-          filter: {
-            showVerified: true,
-            showPrivate: true,
-            showWithOutProfilePicture: true,
-          },
-        } as State
-        : { status: "initial" as const }
+          scanSnapshots: previewSnapshots,
+          results: resultsForLens(previewSnapshots, previewLens),
+          selectedResults: previewUsers.slice(0, 3),
+          whitelistedResults: previewUsers.slice(10, 12),
+          scanIncomplete: previewParams.get('preview') === 'scanning-incomplete',
+          filter: DEFAULT_SCANNING_FILTER,
+        }
+        : { status: 'initial' as const }
     ),
   });
-
-  const [auditMode, setAuditMode] = useState<AuditMode>(DEFAULT_AUDIT_MODE);
 
   const [toast, setToast] = useState<{ readonly show: false } | { readonly show: true; readonly text: string }>({
     show: false,
@@ -137,7 +149,7 @@ function App() {
     saveTimings(timings);
   }, [timings]);
 
-  const [cachedScan, setCachedScan] = useState<{ readonly results: readonly UserNode[]; readonly timestamp: number } | null>(() =>
+  const [cachedScan, setCachedScan] = useState<{ readonly snapshots: ScanSnapshots; readonly timestamp: number } | null>(() =>
     loadCachedScanResults(),
   );
 
@@ -154,13 +166,13 @@ function App() {
 
   let isActiveProcess: boolean;
   switch (state.status) {
-    case "initial":
+    case 'initial':
       isActiveProcess = false;
       break;
-    case "scanning":
+    case 'scanning':
       isActiveProcess = Boolean(state.isScanningActive);
       break;
-    case "unfollowing":
+    case 'unfollowing':
       isActiveProcess = state.percentage < 100;
       break;
     default:
@@ -168,85 +180,76 @@ function App() {
   }
 
   const onLoadCached = () => {
-    if (!cachedScan || cachedScan.results.length === 0) {
+    if (!cachedScan || countSnapshotAccounts(cachedScan.snapshots) === 0) {
       return;
     }
     const whitelistedResults = loadWhitelist();
     setState({
-      status: "scanning",
-      auditMode: DEFAULT_AUDIT_MODE,
+      status: 'scanning',
+      resultsLens: DEFAULT_AUDIT_MODE,
       page: 1,
-      searchTerm: "",
-      currentTab: "non_whitelisted",
+      searchTerm: '',
+      currentTab: 'non_whitelisted',
       percentage: 100,
       isScanningActive: false,
-      results: cachedScan.results,
+      scanSnapshots: cachedScan.snapshots,
+      results: resultsForLens(cachedScan.snapshots, DEFAULT_AUDIT_MODE),
       selectedResults: [],
       whitelistedResults,
-      filter: {
-        showVerified: true,
-        showPrivate: true,
-        showWithOutProfilePicture: true,
-      },
+      filter: DEFAULT_SCANNING_FILTER,
     });
     setToast({
       show: true,
-      text: t("loadedFromCache", cachedScan.results.length),
+      text: t('loadedFromCache', countSnapshotAccounts(cachedScan.snapshots)),
     });
   };
 
-  const onScan = async (mode: AuditMode) => {
-    if (state.status !== "initial") {
+  const onScan = async () => {
+    if (state.status !== 'initial') {
       return;
     }
-    setAuditMode(mode);
     if (isLocalPreview) {
-      const previewUsers = _getPreviewUsers();
+      const users = _getPreviewUsers();
+      const snapshots = buildPreviewSnapshots(users);
       setState({
-        status: "scanning",
-        auditMode: mode,
+        status: 'scanning',
+        resultsLens: DEFAULT_AUDIT_MODE,
         page: 1,
-        searchTerm: "",
-        currentTab: "non_whitelisted",
+        searchTerm: '',
+        currentTab: 'non_whitelisted',
         percentage: 100,
         isScanningActive: false,
-        results: previewUsers,
-        selectedResults: previewUsers.slice(0, 3),
-        whitelistedResults: previewUsers.slice(10, 12),
-        filter: {
-          showVerified: true,
-          showPrivate: true,
-          showWithOutProfilePicture: true,
-        },
+        scanSnapshots: snapshots,
+        results: resultsForLens(snapshots, DEFAULT_AUDIT_MODE),
+        selectedResults: users.slice(0, 3),
+        whitelistedResults: users.slice(10, 12),
+        filter: DEFAULT_SCANNING_FILTER,
       });
       return;
     }
     const whitelistedResults = loadWhitelist();
     setState({
-      status: "scanning",
-      auditMode: mode,
+      status: 'scanning',
+      resultsLens: DEFAULT_AUDIT_MODE,
       page: 1,
-      searchTerm: "",
-      currentTab: "non_whitelisted",
+      searchTerm: '',
+      currentTab: 'non_whitelisted',
       percentage: 0,
       isScanningActive: true,
+      scanSnapshots: EMPTY_SCAN_SNAPSHOTS,
       results: [],
       selectedResults: [],
       whitelistedResults,
-      filter: {
-        showVerified: true,
-        showPrivate: true,
-        showWithOutProfilePicture: true,
-      },
+      filter: DEFAULT_SCANNING_FILTER,
     });
   };
 
   const handleScanFilter = (e: ChangeEvent<HTMLInputElement>) => {
-    if (state.status !== "scanning") {
+    if (state.status !== 'scanning') {
       return;
     }
     if (state.selectedResults.length > 0) {
-      if (!confirm(t("filterChangeClearsSelection"))) {
+      if (!confirm(t('filterChangeClearsSelection'))) {
         // Force re-render. Bit of a hack but had an issue where the checkbox state was still
         // changing in the UI even even when not confirming. So updating the state fixes this
         // by synchronizing the checkboxes with the filter statuses in the state.
@@ -267,7 +270,7 @@ function App() {
   };
 
   const handleUnfollowFilter = (e: ChangeEvent<HTMLInputElement>) => {
-    if (state.status !== "unfollowing") {
+    if (state.status !== 'unfollowing') {
       return;
     }
     setState({
@@ -280,7 +283,7 @@ function App() {
   };
 
   const toggleUser = (newStatus: boolean, user: UserNode) => {
-    if (state.status !== "scanning") {
+    if (state.status !== 'scanning') {
       return;
     }
     if (newStatus) {
@@ -297,7 +300,7 @@ function App() {
   };
 
   const toggleAllUsers = (e: ChangeEvent<HTMLInputElement>) => {
-    if (state.status !== "scanning") {
+    if (state.status !== 'scanning') {
       return;
     }
     const displayed = getUsersForDisplay(
@@ -306,6 +309,7 @@ function App() {
       state.currentTab,
       state.searchTerm,
       state.filter,
+      state.resultsLens,
     );
     if (e.currentTarget.checked) {
       const currentIds = new Set(state.selectedResults.map(u => u.id));
@@ -325,7 +329,7 @@ function App() {
 
   // it will work the same as toggleAllUsers, but it will select everyone on the current page.
   const toggleCurrentePageUsers = (e: ChangeEvent<HTMLInputElement>) => {
-    if (state.status !== "scanning") {
+    if (state.status !== 'scanning') {
       return;
     }
     const pageUsers = getCurrentPageUnfollowers(
@@ -335,6 +339,7 @@ function App() {
         state.currentTab,
         state.searchTerm,
         state.filter,
+        state.resultsLens,
       ),
       state.page,
     );
@@ -356,7 +361,7 @@ function App() {
 
   const onWhitelistUpdate = (updatedWhitelist: readonly UserNode[]) => {
     saveWhitelist(updatedWhitelist);
-    if (state.status === "scanning") {
+    if (state.status === 'scanning') {
       setState({
         ...state,
         whitelistedResults: updatedWhitelist,
@@ -380,41 +385,40 @@ function App() {
       // For IE and Firefox prior to version 4
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (e) {
-        e.returnValue = "Changes you made may not be saved.";
+        e.returnValue = t('beforeUnloadWarning');
       }
 
-      // For Safari
-      return "Changes you made may not be saved.";
+      return t('beforeUnloadWarning');
     };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [isActiveProcess, state]);
 
   useEffect(() => {
-    if (state.status !== "scanning" || isLocalPreview) {
+    if (state.status !== 'scanning' || isLocalPreview) {
       return;
     }
     if (state.percentage === 100) {
       return;
     }
     const adapter = getActiveAdapter();
-    const scanMode = state.status === "scanning" ? state.auditMode : DEFAULT_AUDIT_MODE;
-    void runAccountScan(adapter, scanMode, timings, {
+    void runAccountScan(adapter, timings, {
       onToast: text => setToast({ show: true, text }),
       onClearToast: () => setToast({ show: false }),
       onFollowersProgress: (followersCount, percentage) => {
         setState(prev =>
-          prev.status === "scanning"
+          prev.status === 'scanning'
             ? { ...prev, percentage, totalScanned: followersCount }
             : prev,
         );
       },
-      onFollowingProgress: (checkedCount, percentage, newNonFollowers) => {
+      onFollowingProgress: (checkedCount, percentage, partialSnapshots) => {
         setState(prev =>
-          prev.status === "scanning"
+          prev.status === 'scanning'
             ? {
                 ...prev,
-                results: newNonFollowers.length > 0 ? [...prev.results, ...newNonFollowers] : prev.results,
+                scanSnapshots: partialSnapshots,
+                results: resultsForLens(partialSnapshots, prev.resultsLens),
                 totalScanned: checkedCount,
                 percentage,
               }
@@ -423,23 +427,23 @@ function App() {
       },
       onFollowersFailed: () => {
         setState(prev =>
-          prev.status === "scanning"
+          prev.status === 'scanning'
             ? { ...prev, isScanningActive: false, scanIncomplete: true }
             : prev,
         );
       },
       onFollowingFailedEarly: () => {
         setState(prev =>
-          prev.status === "scanning" ? { ...prev, isScanningActive: false } : prev,
+          prev.status === 'scanning' ? { ...prev, isScanningActive: false } : prev,
         );
       },
-      onComplete: ({ results, checkedCount, scanIsComplete }) => {
-        if (scanIsComplete || results.length > 0) {
-          saveCachedScanResults(results);
-          setCachedScan({ results, timestamp: Date.now() });
+      onComplete: ({ snapshots, checkedCount, scanIsComplete }) => {
+        if (scanIsComplete || countSnapshotAccounts(snapshots) > 0) {
+          saveCachedScanResults(snapshots);
+          setCachedScan({ snapshots, timestamp: Date.now() });
         }
         setState(prev => {
-          if (prev.status !== "scanning") {
+          if (prev.status !== 'scanning') {
             return prev;
           }
           return {
@@ -447,7 +451,8 @@ function App() {
             percentage: 100,
             scanIncomplete: !scanIsComplete,
             isScanningActive: false,
-            results,
+            scanSnapshots: snapshots,
+            results: resultsForLens(snapshots, prev.resultsLens),
             totalScanned: checkedCount,
           };
         });
@@ -458,7 +463,7 @@ function App() {
   }, [state.status]);
 
   useEffect(() => {
-    if (state.status !== "unfollowing" || isLocalPreview) {
+    if (state.status !== 'unfollowing' || isLocalPreview) {
       return;
     }
     const adapter = getActiveAdapter();
@@ -466,7 +471,7 @@ function App() {
     void runActionQueue(adapter, queueAction, state.selectedResults, timings, {
       onProgress: (entry, percentage) => {
         setState(prev => {
-          if (prev.status !== "unfollowing") {
+          if (prev.status !== 'unfollowing') {
             return prev;
           }
           return {
@@ -477,7 +482,7 @@ function App() {
         });
       },
       onActionBlocked: () => {
-        setToast({ show: true, text: t("actionBlockedWarning") });
+        setToast({ show: true, text: t('actionBlockedWarning') });
       },
       onSleepToast: text => setToast({ show: true, text }),
       onClearToast: () => setToast({ show: false }),
@@ -487,20 +492,18 @@ function App() {
 
   let markup: React.JSX.Element;
   switch (state.status) {
-    case "initial":
+    case 'initial':
       markup = (
         <NotSearching
           onScan={onScan}
           cachedScan={cachedScan}
           onLoadCached={onLoadCached}
-          auditMode={auditMode}
-          onAuditModeChange={setAuditMode}
-          capabilities={getActiveAdapter().capabilities}
+          cachedAccountCount={cachedScan ? countSnapshotAccounts(cachedScan.snapshots) : 0}
         />
       );
       break;
 
-    case "scanning": {
+    case 'scanning': {
       markup = <Searching
         state={state}
         handleScanFilter={handleScanFilter}
@@ -510,26 +513,26 @@ function App() {
         scanningPaused={scanningPaused}
         UserCheckIcon={UserCheckIcon}
         UserUncheckIcon={UserUncheckIcon}
-      ></Searching>;
+       />;
       break;
     }
 
-    case "unfollowing":
+    case 'unfollowing':
       markup = <Unfollowing
         state={state}
         handleUnfollowFilter={handleUnfollowFilter}
-      ></Unfollowing>;
+       />;
       break;
 
     default:
       assertUnreachable(state);
   }
 
-  const showScanWarning = state.status === "scanning" && state.results.length === 0;
+  const showScanWarning = state.status === 'scanning' && state.results.length === 0;
 
   return (
-    <main id="main" role="main" className={`iu ${showScanWarning ? "has-scan-warning" : ""}`}>
-      <section className="overlay">
+    <main id='main' role='main' className={`iu ${showScanWarning ? 'has-scan-warning' : ''}`}>
+      <section className='overlay'>
         <Toolbar
           state={state}
           setState={setState}
@@ -538,10 +541,10 @@ function App() {
           toggleCurrentePageUsers={toggleCurrentePageUsers}
           setTimings={setTimings}
           currentTimings={timings}
-          whitelistedUsers={state.status === "scanning" ? state.whitelistedResults : loadWhitelist()}
+          whitelistedUsers={state.status === 'scanning' ? state.whitelistedResults : loadWhitelist()}
           onWhitelistUpdate={onWhitelistUpdate}
           networkLabel={getActiveAdapter().networkLabel}
-        ></Toolbar>
+         />
 
         {markup}
 
@@ -554,11 +557,11 @@ function App() {
 const resolvedAdapter = resolveAdapter(
   location.hostname,
   isLocalPreview,
-  isPreviewX ? "x" : "instagram",
+  isPreviewX ? 'x' : 'instagram',
 );
 
 function mountApp(): void {
-  document.body.innerHTML = "";
+  document.body.innerHTML = '';
   render(<App />, document.body);
 }
 
@@ -566,24 +569,24 @@ async function bootXApp(): Promise<void> {
   installXApiHeaderCapture();
   persistXBearerFromPage();
 
-  const banner = document.createElement("div");
-  banner.textContent = t("xPreparingScan");
+  const banner = document.createElement('div');
+  banner.textContent = t('xPreparingScan');
   banner.setAttribute(
-    "style",
+    'style',
     [
-      "position:fixed",
-      "inset:0",
-      "z-index:2147483646",
-      "display:flex",
-      "align-items:center",
-      "justify-content:center",
-      "padding:24px",
-      "background:rgba(0,0,0,0.55)",
-      "color:#fff",
-      "font:600 16px/1.4 system-ui,sans-serif",
-      "text-align:center",
-      "pointer-events:none",
-    ].join(";"),
+      'position:fixed',
+      'inset:0',
+      'z-index:2147483646',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:24px',
+      'background:rgba(0,0,0,0.55)',
+      'color:#fff',
+      'font:600 16px/1.4 system-ui,sans-serif',
+      'text-align:center',
+      'pointer-events:none',
+    ].join(';'),
   );
   document.body.appendChild(banner);
 
@@ -593,24 +596,24 @@ async function bootXApp(): Promise<void> {
 }
 
 if (!resolvedAdapter) {
-  alert(t("hostGuardUnsupported"));
+  alert(t('hostGuardUnsupported'));
 } else {
   setActiveAdapter(resolvedAdapter);
   try {
     resolvedAdapter.assertRuntime();
     document.title = resolvedAdapter.documentTitle;
-    if (resolvedAdapter.id === "x") {
+    if (resolvedAdapter.id === 'x') {
       void bootXApp().catch(() => {
-        alert(t("scanFailedXSession"));
+        alert(t('scanFailedXSession'));
       });
     } else {
       mountApp();
     }
   } catch {
     const msg =
-      resolvedAdapter.id === "x"
-        ? t("scanFailedXSession")
-        : t("hostGuardUnsupported");
+      resolvedAdapter.id === 'x'
+        ? t('scanFailedXSession')
+        : t('hostGuardUnsupported');
     alert(msg);
   }
 }

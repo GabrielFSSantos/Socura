@@ -136,5 +136,59 @@
     cursor: not-allowed;
     filter: grayscale(0.6);
   }
+
+  .lens-switcher {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    p {
+      margin: 0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      opacity: 0.85;
+    }
+  }
+
+  .lens-btn {
+    text-align: left;
+    padding: 0.45rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.2);
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.85rem;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .lens-btn-active {
+    border-color: rgba(224, 163, 58, 0.55);
+    background: rgba(224, 163, 58, 0.12);
+  }
+
+  .relationship-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    margin-left: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .relationship-mutual {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+  }
+
+  .relationship-one-way {
+    background: rgba(251, 191, 36, 0.12);
+    color: #fcd34d;
+  }
 }
 

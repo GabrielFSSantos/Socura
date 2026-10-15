@@ -48,21 +48,21 @@ createServer((req, res) => {
     res.end(data);
   } catch {
     res.writeHead(404);
-    res.end("Not found");
+    res.end("Não encontrado");
   }
 }).listen(port, host, () => {
   const base =
     host === "0.0.0.0" ? `http://127.0.0.1:${port}` : `http://${host}:${port}`;
   console.log("");
-  console.log("  Socura — lab local");
+  console.log("  Socura — laboratório local");
   console.log("  ───────────────────────────────");
-  console.log(`  Hub (comece aqui):     ${base}/`);
-  console.log(`  Preview Instagram:     ${base}/preview.html`);
-  console.log(`  Preview X:             ${base}/preview-x.html`);
-  console.log(`  Copiar script (Pages): ${base}/index.html`);
+  console.log(`  Início (hub):              ${base}/`);
+  console.log(`  Pré-visualização Instagram: ${base}/preview.html`);
+  console.log(`  Pré-visualização X:         ${base}/preview-x.html`);
+  console.log(`  Copiar script:              ${base}/index.html`);
   console.log("");
   console.log("  Rede real: copie o script em index.html e cole no console de");
-  console.log("  instagram.com ou x.com (logado). Preview não chama API.");
+  console.log("  instagram.com ou x.com (logado). A pré-visualização não chama a rede.");
   console.log("");
   console.log("  Ctrl+C para encerrar");
 });

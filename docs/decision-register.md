@@ -14,5 +14,6 @@
 | D-010 | 2026 | Produto canônico em **GabrielFSSantos/Socura** e Pages próprio | Independência de distribuição; fork com créditos explícitos | Continuar apontando Pages upstream; repo novo sem rede de fork |
 | D-011 | 2026 | X.com MVP via **REST 1.1 interno** (`/i/api/1.1/`) com sessão web | Contrato mais estável que GraphQL com queryId volátil | Só GraphQL; API oficial paga |
 | D-012 | 2026 | `localStorage` com prefixo `iu_ig_` / `iu_x_`; fallback `iu_*` só no Instagram | Evita colisão conceitual; migração suave IG | Prefixo único global |
+| D-013 | 2026 | Scan único completo + **visões** pós-scan (`non_followers`, `following_all`, `followers_manage`) | Um passo de API; usuário alterna listas e ações sem reescanear | Três modos só na landing (scan parcial por modo) |
 
 Ao registrar nova decisão, acrescente uma linha e atualize [DESENVOLVIMENTO.md](DESENVOLVIMENTO.md) ou [PLATAFORMAS/](PLATAFORMAS/) se aplicável.

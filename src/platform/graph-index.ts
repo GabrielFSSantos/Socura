@@ -1,4 +1,4 @@
-import { GraphUser } from "./types";
+import { GraphUser } from './types';
 
 export interface GraphUserIndex {
   readonly ids: Set<string>;

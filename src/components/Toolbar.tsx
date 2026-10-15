@@ -1,12 +1,12 @@
-import React, { ChangeEvent, useState } from "react";
-import { State } from "../model/state";
-import { assertUnreachable, copyListToClipboard, exportToCSV, exportToJSON, getCurrentPageUnfollowers, getUsersForDisplay } from "../utils/utils";
-import { SettingMenu } from "./SettingMenu";
-import { SettingIcon } from "./icons/SettingIcon";
-import { Timings } from "../model/timings";
-import { Logo } from "./icons/Logo";
-import { UserNode } from "../model/user";
-import { t } from "../utils/i18n";
+import React, { ChangeEvent, useState } from 'react';
+import { State } from '../model/state';
+import { assertUnreachable, copyListToClipboard, exportToCSV, exportToJSON, getCurrentPageUnfollowers, getUsersForDisplay } from '../utils/utils';
+import { SettingMenu } from './SettingMenu';
+import { SettingIcon } from './icons/SettingIcon';
+import { Timings } from '../model/timings';
+import { Logo } from './icons/Logo';
+import { UserNode } from '../model/user';
+import { t } from '../utils/i18n';
 
 interface ToolBarProps {
   isActiveProcess: boolean;
@@ -37,52 +37,52 @@ export const Toolbar = ({
   const [settingMenu, setSettingMenu] = useState(false);
 
   return (
-    <header className="app-header">
-      {state.status === "scanning" && state.results.length === 0 && (
-        <div className="scan-warning-banner" role="status">
-          <span>{t("scanNoticeBanner")}</span>
+    <header className='app-header'>
+      {state.status === 'scanning' && state.results.length === 0 && (
+        <div className='scan-warning-banner' role='status'>
+          <span>{t('scanNoticeBanner')}</span>
         </div>
       )}
       {isActiveProcess && (
         <div
-          className="progressbar"
-          style={{ '--progress-width': `${state.status !== 'initial' ? state.percentage : 0}%` } as React.CSSProperties}
+          className='progressbar'
+          style={{ '--progress-width': `${state.status !== 'initial' ? state.percentage : 0}%` }}
         />
       )}
-      <div className="app-header-content">
+      <div className='app-header-content'>
         <div
-          className="logo"
+          className='logo'
           onClick={() => {
             if (isActiveProcess) {
               return;
             }
             switch (state.status) {
-              case "initial":
-                if (confirm(t("goBackConfirm"))) {
+              case 'initial':
+                if (confirm(t('goBackConfirmNetwork', networkLabel))) {
                   location.reload();
                 }
                 break;
 
-              case "scanning":
-              case "unfollowing":
+              case 'scanning':
+              case 'unfollowing':
                 setState({
-                  status: "initial",
+                  status: 'initial',
                 });
             }
           }}
         >
           <Logo />
-          <div className="logo-text">
+          <div className='logo-text'>
             <span>Socura</span>
             <span>{networkLabel}</span>
           </div>
         </div>
-        <div className="toolbar-actions">
+        <div className='toolbar-actions'>
           <button
-            className="copy-list"
+            className='copy-list'
             onClick={() => {
               switch (state.status) {
-                case "scanning":
+                case 'scanning':
                   return copyListToClipboard(
                     getUsersForDisplay(
                       state.results,
@@ -90,70 +90,73 @@ export const Toolbar = ({
                       state.currentTab,
                       state.searchTerm,
                       state.filter,
+                      state.resultsLens,
                     ),
-                    t("copiedToClipboard")
+                    t('copiedToClipboard'),
                   );
-                case "initial":
-                case "unfollowing":
+                case 'initial':
+                case 'unfollowing':
                   return;
                 default:
                   assertUnreachable(state);
               }
             }}
-            disabled={state.status === "initial"}
+            disabled={state.status === 'initial'}
           >
-            {t("copyList")}
+            {t('copyList')}
           </button>
           <button
-            className="copy-list"
-            title={t("exportJson")}
+            className='copy-list'
+            title={t('exportJson')}
             onClick={() => {
-              if (state.status === "scanning") {
-                exportToJSON(getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter));
+              if (state.status === 'scanning') {
+                exportToJSON(getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter, state.resultsLens));
               }
             }}
-            disabled={state.status !== "scanning"}
+            disabled={state.status !== 'scanning'}
           >
-            JSON
+            {t('exportJsonShort')}
           </button>
           <button
-            className="copy-list"
-            title={t("exportCsv")}
+            className='copy-list'
+            title={t('exportCsv')}
             onClick={() => {
-              if (state.status === "scanning") {
-                exportToCSV(getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter));
+              if (state.status === 'scanning') {
+                exportToCSV(getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter, state.resultsLens));
               }
             }}
-            disabled={state.status !== "scanning"}
+            disabled={state.status !== 'scanning'}
           >
-            CSV
+            {t('exportCsvShort')}
           </button>
           <button
-            className="icon-button"
-            type="button"
-            title={t("settings")}
-            onClick={() => { setSettingMenu(true); }}
+            className='icon-button'
+            type='button'
+            title={t('settings')}
+            onClick={() => {
+ setSettingMenu(true);
+}}
           >
             <SettingIcon />
           </button>
         </div>
-        <div className="toolbar-search">
+        <div className='toolbar-search'>
           <input
-            type="text"
-            className="search-bar"
-            placeholder={t("searchPlaceholder")}
-            disabled={state.status === "initial"}
-            value={state.status === "initial" ? "" : state.searchTerm}
+            type='text'
+            className='search-bar'
+            placeholder={t('searchPlaceholder')}
+            disabled={state.status === 'initial'}
+            value={state.status === 'initial' ? '' : state.searchTerm}
             onChange={e => {
               switch (state.status) {
-                case "initial":
+                case 'initial':
                   return;
-                case "scanning":
+                case 'scanning':
                   return setState({
                     ...state,
                     searchTerm: e.currentTarget.value,
                   });
-                case "unfollowing":
+                case 'unfollowing':
                   return setState({
                     ...state,
                     searchTerm: e.currentTarget.value,
@@ -163,30 +166,30 @@ export const Toolbar = ({
               }
             }}
           />
-          {state.status === "scanning" && (
-            <label className="select-toggle">
+          {state.status === 'scanning' && (
+            <label className='select-toggle'>
               <input
-                title={t("selectPage")}
-                type="checkbox"
+                title={t('selectPage')}
+                type='checkbox'
                 disabled={Boolean(state.isScanningActive)}
                 checked={
                   (() => {
-                    const displayed = getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter);
+                    const displayed = getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter, state.resultsLens);
                     const pageUsers = getCurrentPageUnfollowers(displayed, state.page);
                     return pageUsers.length > 0 && pageUsers.every(u => state.selectedResults.some(s => s.id === u.id));
                   })()
                 }
-                className="toggle-all-checkbox"
+                className='toggle-all-checkbox'
                 onChange={toggleCurrentePageUsers}
               />
-              {t("selectPage")}
+              {t('selectPage')}
             </label>
           )}
-          {state.status === "scanning" && (
-            <label className="select-toggle">
+          {state.status === 'scanning' && (
+            <label className='select-toggle'>
               <input
-                title={t("selectAll")}
-                type="checkbox"
+                title={t('selectAll')}
+                type='checkbox'
                 disabled={Boolean(state.isScanningActive)}
                 checked={
                   (() => {
@@ -196,14 +199,15 @@ export const Toolbar = ({
                       state.currentTab,
                       state.searchTerm,
                       state.filter,
+                      state.resultsLens,
                     );
                     return displayed.length > 0 && displayed.every(u => state.selectedResults.some(s => s.id === u.id));
                   })()
                 }
-                className="toggle-all-checkbox"
+                className='toggle-all-checkbox'
                 onChange={toggleAllUsers}
               />
-              {t("selectAll")}
+              {t('selectAll')}
             </label>
           )}
         </div>

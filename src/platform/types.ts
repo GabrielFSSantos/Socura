@@ -1,8 +1,8 @@
-import { UserNode } from "../model/user";
-import { Timings } from "../model/timings";
-import type { TranslationKey } from "../utils/i18n";
+import { UserNode } from '../model/user';
+import { Timings } from '../model/timings';
+import type { TranslationKey } from '../utils/i18n';
 
-export type PlatformId = "instagram" | "x" | "preview";
+export type PlatformId = 'instagram' | 'x' | 'preview';
 
 export interface GraphUser {
   readonly id: string;
@@ -30,16 +30,16 @@ export interface PlatformCapabilities {
   readonly removeFollower: boolean;
 }
 
-export type PlatformApiErrorKind = "session" | "api" | "rate_limit";
+export type PlatformApiErrorKind = 'session' | 'api' | 'rate_limit';
 
 export class PlatformApiError extends Error {
   readonly status: number;
   readonly retryable: boolean;
   readonly kind: PlatformApiErrorKind;
 
-  constructor(status: number, message: string, retryable = false, kind: PlatformApiErrorKind = "api") {
+  constructor(status: number, message: string, retryable = false, kind: PlatformApiErrorKind = 'api') {
     super(message);
-    this.name = "PlatformApiError";
+    this.name = 'PlatformApiError';
     this.status = status;
     this.retryable = retryable;
     this.kind = kind;
