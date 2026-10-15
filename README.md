@@ -133,8 +133,6 @@ Detalhes: **[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md)** · **[docs/READ
 
 O CI gera `public/index.html` a partir de `public/index.shell.html`. Evite editar o bloco do script manualmente; textos e estilos da landing ficam no shell e em `public/landing.css`.
 
-**IDE:** abra o repositório em `~/GitHub/Socura`. Erros de TypeScript em pastas antigas (`Social-Unfollowers`, `InstagramUnfollowers`) vêm de workspaces legados — use o meta-workspace com a pasta **Socura** apenas.
-
 ## Origem e créditos
 
 Este projeto é um **fork independente** derivado de [InstagramUnfollowers](https://github.com/davidarroyo1234/InstagramUnfollowers) por David Arroyo (licença MIT). O código original permanece sob copyright do autor upstream; as modificações e a manutenção desta linha são de Gabriel F. S. Santos. Detalhes: [NOTICE.md](NOTICE.md).
