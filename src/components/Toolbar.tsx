@@ -6,7 +6,7 @@ import { SettingIcon } from "./icons/SettingIcon";
 import { Timings } from "../model/timings";
 import { Logo } from "./icons/Logo";
 import { UserNode } from "../model/user";
-import { Language, t } from "../utils/i18n";
+import { t } from "../utils/i18n";
 
 interface ToolBarProps {
   isActiveProcess: boolean;
@@ -18,8 +18,6 @@ interface ToolBarProps {
   setTimings: (timings: Timings) => void;
   whitelistedUsers: readonly UserNode[];
   onWhitelistUpdate: (users: readonly UserNode[]) => void;
-  lang: Language;
-  onLanguageChange: (lang: Language) => void;
 }
 
 export const Toolbar = ({
@@ -32,8 +30,6 @@ export const Toolbar = ({
   setTimings,
   whitelistedUsers,
   onWhitelistUpdate,
-  lang,
-  onLanguageChange,
 }: ToolBarProps) => {
 
   const [settingMenu, setSettingMenu] = useState(false);
@@ -42,7 +38,7 @@ export const Toolbar = ({
     <header className="app-header">
       {state.status === "scanning" && state.results.length === 0 && (
         <div className="scan-warning-banner" role="status">
-          <span>{t(lang, "scanNoticeBanner")}</span>
+          <span>{t("scanNoticeBanner")}</span>
         </div>
       )}
       {isActiveProcess && (
@@ -56,12 +52,11 @@ export const Toolbar = ({
           className="logo"
           onClick={() => {
             if (isActiveProcess) {
-              // Avoid resetting state while active process.
               return;
             }
             switch (state.status) {
               case "initial":
-                if (confirm(t(lang, "goBackConfirm"))) {
+                if (confirm(t("goBackConfirm"))) {
                   location.reload();
                 }
                 break;
@@ -76,8 +71,8 @@ export const Toolbar = ({
         >
           <Logo />
           <div className="logo-text">
+            <span>Social Unfollowers</span>
             <span>Instagram</span>
-            <span>Unfollowers</span>
           </div>
         </div>
         <div className="toolbar-actions">
@@ -94,7 +89,7 @@ export const Toolbar = ({
                       state.searchTerm,
                       state.filter,
                     ),
-                    t(lang, "copiedToClipboard")
+                    t("copiedToClipboard")
                   );
                 case "initial":
                 case "unfollowing":
@@ -105,11 +100,11 @@ export const Toolbar = ({
             }}
             disabled={state.status === "initial"}
           >
-            {t(lang, "copyList")}
+            {t("copyList")}
           </button>
           <button
             className="copy-list"
-            title={t(lang, "exportJson")}
+            title={t("exportJson")}
             onClick={() => {
               if (state.status === "scanning") {
                 exportToJSON(getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter));
@@ -121,7 +116,7 @@ export const Toolbar = ({
           </button>
           <button
             className="copy-list"
-            title={t(lang, "exportCsv")}
+            title={t("exportCsv")}
             onClick={() => {
               if (state.status === "scanning") {
                 exportToCSV(getUsersForDisplay(state.results, state.whitelistedResults, state.currentTab, state.searchTerm, state.filter));
@@ -132,18 +127,9 @@ export const Toolbar = ({
             CSV
           </button>
           <button
-            className="copy-list"
-            type="button"
-            title={lang === "en" ? t(lang, "switchToSpanish") : t(lang, "switchToEnglish")}
-            onClick={() => onLanguageChange(lang === "en" ? "es" : "en")}
-            style={{ fontWeight: "bold" }}
-          >
-            🌐 {lang.toUpperCase()}
-          </button>
-          <button
             className="icon-button"
             type="button"
-            title={t(lang, "settings")}
+            title={t("settings")}
             onClick={() => { setSettingMenu(true); }}
           >
             <SettingIcon />
@@ -153,7 +139,7 @@ export const Toolbar = ({
           <input
             type="text"
             className="search-bar"
-            placeholder={t(lang, "searchPlaceholder")}
+            placeholder={t("searchPlaceholder")}
             disabled={state.status === "initial"}
             value={state.status === "initial" ? "" : state.searchTerm}
             onChange={e => {
@@ -178,9 +164,8 @@ export const Toolbar = ({
           {state.status === "scanning" && (
             <label className="select-toggle">
               <input
-                title={t(lang, "selectPage")}
+                title={t("selectPage")}
                 type="checkbox"
-                // Avoid allowing selection only while the scan is actively fetching
                 disabled={Boolean(state.isScanningActive)}
                 checked={
                   (() => {
@@ -192,15 +177,14 @@ export const Toolbar = ({
                 className="toggle-all-checkbox"
                 onChange={toggleCurrentePageUsers}
               />
-              {t(lang, "selectPage")}
+              {t("selectPage")}
             </label>
           )}
           {state.status === "scanning" && (
             <label className="select-toggle">
               <input
-                title={t(lang, "selectAll")}
+                title={t("selectAll")}
                 type="checkbox"
-                // Avoid allowing selection only while the scan is actively fetching
                 disabled={Boolean(state.isScanningActive)}
                 checked={
                   (() => {
@@ -217,7 +201,7 @@ export const Toolbar = ({
                 className="toggle-all-checkbox"
                 onChange={toggleAllUsers}
               />
-              {t(lang, "selectAll")}
+              {t("selectAll")}
             </label>
           )}
         </div>
@@ -229,8 +213,6 @@ export const Toolbar = ({
           setTimings={setTimings}
           whitelistedUsers={whitelistedUsers}
           onWhitelistUpdate={onWhitelistUpdate}
-          lang={lang}
-          onLanguageChange={onLanguageChange}
         />
       )}
 

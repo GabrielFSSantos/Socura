@@ -1,14 +1,14 @@
 import { UserNode } from "../model/user";
 import { Timings } from "../model/timings";
 import { WHITELISTED_RESULTS_STORAGE_KEY, TIMINGS_STORAGE_KEY, LAST_SCAN_RESULTS_STORAGE_KEY, LAST_SCAN_TIMESTAMP_STORAGE_KEY } from "../constants/constants";
+import { t } from "./i18n";
 
 /**
  * Export whitelist to a JSON file
  */
-export const exportWhitelist = (whitelistedUsers: readonly UserNode[]): void => {
+export const exportWhitelist = (whitelistedUsers: readonly UserNode[]): boolean => {
   if (whitelistedUsers.length === 0) {
-    alert("No users in whitelist to export");
-    return;
+    return false;
   }
 
   const dataStr = JSON.stringify(whitelistedUsers, null, 2);
@@ -23,6 +23,7 @@ export const exportWhitelist = (whitelistedUsers: readonly UserNode[]): void => 
   document.body.removeChild(link);
   
   URL.revokeObjectURL(url);
+  return true;
 };
 
 /**
@@ -40,13 +41,11 @@ export const importWhitelist = (
       const content = e.target?.result as string;
       const importedUsers = JSON.parse(content) as UserNode[];
       
-      // Validate the imported data
       if (!Array.isArray(importedUsers)) {
-        onError("Invalid file format: Expected an array of users");
+        onError(t("importInvalidFileFormatArray"));
         return;
       }
       
-      // Basic validation of user structure
       const isValid = importedUsers.every(user => 
         user.id && 
         user.username && 
@@ -55,31 +54,27 @@ export const importWhitelist = (
       );
       
       if (!isValid) {
-        onError("Invalid file format: Users missing required fields (id, username)");
+        onError(t("importInvalidFileFormatFields"));
         return;
       }
       
       onSuccess(importedUsers);
     } catch (error) {
-      onError(`Failed to parse JSON file: ${error instanceof Error ? error.message : "Unknown error"}`);
+      onError(t("importParseFailed", error instanceof Error ? error.message : "erro desconhecido"));
     }
   };
   
   reader.onerror = () => {
-    onError("Failed to read file");
+    onError(t("importReadFailed"));
   };
   
   reader.readAsText(file);
 };
 
 /**
- * Clear all whitelist data
+ * Clear all whitelist data (caller should confirm with the user)
  */
 export const clearWhitelist = (): void => {
-  if (!confirm("Are you sure you want to clear the entire whitelist? This action cannot be undone.")) {
-    return;
-  }
-  
   localStorage.removeItem(WHITELISTED_RESULTS_STORAGE_KEY);
 };
 

@@ -1,15 +1,14 @@
 import React, { useRef, useState } from "react";
 import { Typename, UserNode } from "../model/user";
 import { exportWhitelist, importWhitelist, clearWhitelist, mergeWhitelists } from "../utils/whitelist-manager";
-import { Language, t } from "../utils/i18n";
+import { t } from "../utils/i18n";
 
 interface WhitelistManagerProps {
   whitelistedUsers: readonly UserNode[];
   onWhitelistUpdate: (users: readonly UserNode[]) => void;
-  lang: Language;
 }
 
-export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: WhitelistManagerProps) => {
+export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate }: WhitelistManagerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importMode, setImportMode] = useState<"replace" | "merge">("merge");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -17,8 +16,13 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
   const [pasteText, setPasteText] = useState("");
 
   const handleExport = () => {
-    exportWhitelist(whitelistedUsers);
-    setMessage({ type: "success", text: t(lang, "whitelistExported") });
+    const ok = exportWhitelist(whitelistedUsers);
+    if (!ok) {
+      setMessage({ type: "error", text: t("whitelistExportEmpty") });
+      setTimeout(() => setMessage(null), 4000);
+      return;
+    }
+    setMessage({ type: "success", text: t("whitelistExported") });
     setTimeout(() => setMessage(null), 3000);
   };
 
@@ -40,13 +44,18 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
           const newUsersCount = finalUsers.length - whitelistedUsers.length;
           setMessage({ 
             type: "success", 
-            text: `Merged successfully! Added ${newUsersCount} new users (${importedUsers.length} imported, ${importedUsers.length - newUsersCount} duplicates skipped)` 
+            text: t(
+              "whitelistImportMerged",
+              newUsersCount,
+              importedUsers.length,
+              importedUsers.length - newUsersCount,
+            ),
           });
         } else {
           finalUsers = importedUsers;
           setMessage({ 
             type: "success", 
-            text: `Replaced whitelist with ${importedUsers.length} users` 
+            text: t("whitelistImportReplaced", importedUsers.length),
           });
         }
         
@@ -59,17 +68,16 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
       }
     );
 
-    // Reset file input
     event.currentTarget.value = "";
   };
 
   const handleClear = () => {
-    if (!confirm(t(lang, "clearWhitelistConfirm"))) {
+    if (!confirm(t("clearWhitelistConfirm"))) {
       return;
     }
     clearWhitelist();
     onWhitelistUpdate([]);
-    setMessage({ type: "success", text: t(lang, "whitelistCleared") });
+    setMessage({ type: "success", text: t("whitelistCleared") });
     setTimeout(() => setMessage(null), 3000);
   };
 
@@ -80,7 +88,7 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
       .filter(s => s.length > 0 && /^[a-zA-Z0-9._]+$/.test(s));
 
     if (rawTokens.length === 0) {
-      setMessage({ type: "error", text: t(lang, "noValidUsernamesFound") });
+      setMessage({ type: "error", text: t("noValidUsernamesFound") });
       setTimeout(() => setMessage(null), 4000);
       return;
     }
@@ -90,7 +98,7 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
     const toAdd = uniqueUsernames.filter(u => !existingUsernames.has(u));
 
     if (toAdd.length === 0) {
-      setMessage({ type: "success", text: t(lang, "pastedUsersAlreadyExist") });
+      setMessage({ type: "success", text: t("pastedUsersAlreadyExist") });
       setTimeout(() => setMessage(null), 4000);
       return;
     }
@@ -126,7 +134,7 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
     setShowPasteArea(false);
     setMessage({
       type: "success",
-      text: t(lang, "pastedUsersAdded", newNodes.length),
+      text: t("pastedUsersAdded", newNodes.length),
     });
     setTimeout(() => setMessage(null), 5000);
   };
@@ -134,9 +142,9 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
   return (
     <div className="whitelist-manager">
       <div className="whitelist-header">
-        <h4>{t(lang, "whitelistTitle")}</h4>
+        <h4>{t("whitelistTitle")}</h4>
         <span className="whitelist-count">
-          {whitelistedUsers.length} {whitelistedUsers.length === 1 ? t(lang, "userSingular") : t(lang, "userPlural")}
+          {whitelistedUsers.length} {whitelistedUsers.length === 1 ? t("userSingular") : t("userPlural")}
         </span>
       </div>
 
@@ -151,9 +159,9 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
           className="btn btn-export" 
           onClick={handleExport}
           disabled={whitelistedUsers.length === 0}
-          title={whitelistedUsers.length === 0 ? "No users" : t(lang, "exportWhitelist")}
+          title={whitelistedUsers.length === 0 ? t("whitelistNoUsers") : t("exportWhitelist")}
         >
-          📥 {t(lang, "exportWhitelist")}
+          📥 {t("exportWhitelist")}
         </button>
 
         <div className="import-section">
@@ -166,7 +174,7 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
                 checked={importMode === "merge"}
                 onChange={() => setImportMode("merge")}
               />
-              {t(lang, "mergeWhitelist")}
+              {t("mergeWhitelist")}
             </label>
             <label>
               <input
@@ -176,16 +184,16 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
                 checked={importMode === "replace"}
                 onChange={() => setImportMode("replace")}
               />
-              {t(lang, "replaceWhitelist")}
+              {t("replaceWhitelist")}
             </label>
           </div>
 
           <button 
             className="btn btn-import" 
             onClick={handleImportClick}
-            title={t(lang, "importWhitelist")}
+            title={t("importWhitelist")}
           >
-            📤 {t(lang, "importWhitelist")}
+            📤 {t("importWhitelist")}
           </button>
           <input
             ref={fileInputRef}
@@ -200,18 +208,18 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
           type="button"
           className="btn btn-paste" 
           onClick={() => setShowPasteArea(!showPasteArea)}
-          title={t(lang, "pasteWhitelist")}
+          title={t("pasteWhitelist")}
         >
-          📋 {t(lang, "pasteWhitelist")}
+          📋 {t("pasteWhitelist")}
         </button>
 
         <button 
           className="btn btn-clear" 
           onClick={handleClear}
           disabled={whitelistedUsers.length === 0}
-          title={t(lang, "clearWhitelist")}
+          title={t("clearWhitelist")}
         >
-          🗑️ {t(lang, "clearWhitelist")}
+          🗑️ {t("clearWhitelist")}
         </button>
       </div>
 
@@ -219,7 +227,7 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
         <div className="paste-whitelist-box">
           <textarea
             className="paste-whitelist-textarea"
-            placeholder={t(lang, "pasteWhitelistPlaceholder")}
+            placeholder={t("pasteWhitelistPlaceholder")}
             value={pasteText}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPasteText(e.currentTarget.value)}
             rows={3}
@@ -229,14 +237,14 @@ export const WhitelistManager = ({ whitelistedUsers, onWhitelistUpdate, lang }: 
             className="btn btn-paste-submit"
             onClick={handlePasteSubmit}
           >
-            ➕ {t(lang, "addPastedToWhitelist")}
+            ➕ {t("addPastedToWhitelist")}
           </button>
         </div>
       )}
 
       <div className="whitelist-info">
         <p className="info-text">
-          <strong>💡 Tip:</strong> {t(lang, "whitelistTip")}
+          <strong>💡 Dica:</strong> {t("whitelistTip")}
         </p>
       </div>
     </div>

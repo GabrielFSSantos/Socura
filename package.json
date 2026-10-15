@@ -1,4 +1,9 @@
 {
+  "name": "social-unfollowers",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GabrielFSSantos/Social-Unfollowers.git"
+  },
   "scripts": {
     "webpack-build": "webpack --mode production",
     "build-dev": "npm run build && webpack serve --mode development",

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+Alterações relevantes do projeto. Entradas novas em português (BR); histórico anterior pode estar em inglês.
 
 ## [1.2.0] - 2026-04-04
 

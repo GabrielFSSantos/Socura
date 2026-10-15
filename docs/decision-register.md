@@ -1,0 +1,16 @@
+# Registro de decisões
+
+| ID | Data | Decisão | Motivo | Alternativas consideradas |
+| --- | --- | --- | --- | --- |
+| D-001 | — | Usar REST privado `/api/v1/friendships/` em vez de GraphQL público | GraphQL legado retorna 200 com listas vazias; scan falhava silenciosamente | Manter `query_hash` antigo |
+| D-002 | — | Preact com alias `react` / `react-dom` no webpack | Bundle menor para script colado na console | React completo |
+| D-003 | — | Índice de seguidores por `id` + `username` normalizado | Reduz falsos positivos quando `pk` / `pk_id` divergem | Só comparar por `pk` |
+| D-004 | — | Abortar scan se lista de seguidores incompleta | Índice parcial marcaria seguidores reais como não-seguidores | Continuar com aviso |
+| D-005 | — | `scanIncomplete` bloqueia unfollow em massa | Evita ações com dados errados após interrupção | Permitir unfollow sempre |
+| D-006 | 2026 | Fork com visão **Social Unfollowers** (Instagram hoje; X.com no roadmap) | Mesmo produto conceitual em várias redes | Renomear repo imediatamente |
+| D-007 | — | Documentação só em `.md` no repo (sem PDFs de referência) | Foco em código e operação | Pasta `references/pdfs` como em outros labs |
+| D-008 | — | Harness do agente fora do repo de produto | Meta-workspace dedicado; repo sem paths de harness externo | `AGENTS.md` na raiz do fork |
+| D-009 | 2026 | UI e documentação em **PT-BR**; código e identificadores em **inglês** | Fork orientado a usuários e devs BR; manter alinhamento com convenções de código | i18n multilíngue (EN/ES); README bilíngue upstream |
+| D-010 | 2026 | Produto canônico em **GabrielFSSantos/Social-Unfollowers** e Pages próprio | Independência de distribuição; fork com créditos explícitos | Continuar apontando Pages upstream; repo novo sem rede de fork |
+
+Ao registrar nova decisão, acrescente uma linha e, se necessário, atualize o capítulo correspondente em `documentation/`.

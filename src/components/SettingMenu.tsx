@@ -3,7 +3,7 @@ import { Timings } from "../model/timings";
 import { UserNode } from "../model/user";
 import { WhitelistManager } from "./WhitelistManager";
 import { DEFAULT_USERS_PER_SEARCH_CYCLE } from "../constants/constants";
-import { Language, t } from "../utils/i18n";
+import { t } from "../utils/i18n";
 
 interface SettingMenuProps {
   setSettingState: (state: boolean) => void;
@@ -11,8 +11,6 @@ interface SettingMenuProps {
   setTimings: (timings: Timings) => void;
   whitelistedUsers: readonly UserNode[];
   onWhitelistUpdate: (users: readonly UserNode[]) => void;
-  lang: Language;
-  onLanguageChange: (lang: Language) => void;
 }
 
 export const SettingMenu = ({
@@ -21,8 +19,6 @@ export const SettingMenu = ({
   setTimings,
   whitelistedUsers,
   onWhitelistUpdate,
-  lang,
-  onLanguageChange,
 }: SettingMenuProps) => {
   const [timeBetweenSearchCycles, setTimeBetweenSearchCycles] = useState(currentTimings.timeBetweenSearchCycles);
   const [timeToWaitAfterFiveSearchCycles, setTimeToWaitAfterFiveSearchCycles] = useState(currentTimings.timeToWaitAfterFiveSearchCycles);
@@ -54,30 +50,12 @@ export const SettingMenu = ({
           {/* Settings Module */}
           <div className="settings-module">
             <div className="module-header">
-              <h3>{t(lang, "settingsTitle")}</h3>
+              <h3>{t("settingsTitle")}</h3>
             </div>
 
             <div className="settings-content">
               <div className="row">
-                <label className="minimun-width">{t(lang, "language")}</label>
-                <select
-                  style={{
-                    background: "rgba(255, 255, 255, 0.1)",
-                    color: "#fff",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
-                    borderRadius: "4px",
-                    padding: "4px 8px",
-                  }}
-                  value={lang}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onLanguageChange(e.currentTarget.value as Language)}
-                >
-                  <option value="en" style={{ background: "#222" }}>English (EN)</option>
-                  <option value="es" style={{ background: "#222" }}>Español (ES)</option>
-                </select>
-              </div>
-
-              <div className="row">
-                <label className="minimun-width">{t(lang, "timeBetweenSearchCycles")}</label>
+                <label className="minimun-width">{t("timeBetweenSearchCycles")}</label>
                 <input
                   type="number"
                   id="searchCycles"
@@ -91,7 +69,7 @@ export const SettingMenu = ({
               </div>
 
               <div className="row">
-                <label className="minimun-width">{t(lang, "timeToWaitAfterFiveCycles")}</label>
+                <label className="minimun-width">{t("timeToWaitAfterFiveCycles")}</label>
                 <input
                   type="number"
                   id="fiveSearchCycles"
@@ -105,7 +83,7 @@ export const SettingMenu = ({
               </div>
 
               <div className="row">
-                <label className="minimun-width">{t(lang, "timeBetweenUnfollows")}</label>
+                <label className="minimun-width">{t("timeBetweenUnfollows")}</label>
                 <input
                   type="number"
                   id="timeBetweenUnfollow"
@@ -119,7 +97,7 @@ export const SettingMenu = ({
               </div>
 
               <div className="row">
-                <label className="minimun-width">{t(lang, "timeToWaitAfterFiveUnfollows")}</label>
+                <label className="minimun-width">{t("timeToWaitAfterFiveUnfollows")}</label>
                 <input
                   type="number"
                   id="timeAfterFiveUnfollows"
@@ -133,7 +111,7 @@ export const SettingMenu = ({
               </div>
 
               <div className="row">
-                <label className="minimun-width">{t(lang, "usersPerSearchCycle")}</label>
+                <label className="minimun-width">{t("usersPerSearchCycle")}</label>
                 <input
                   type="number"
                   id="usersPerSearchCycle"
@@ -147,8 +125,8 @@ export const SettingMenu = ({
               </div>
 
               <div className="warning-container">
-                <h3 className="warning"><b>{t(lang, "warningPrefix")}</b> {t(lang, "settingsWarning1")}</h3>
-                <h3 className="warning">{t(lang, "settingsWarning2")}</h3>
+                <h3 className="warning"><b>{t("warningPrefix")}</b> {t("settingsWarning1")}</h3>
+                <h3 className="warning">{t("settingsWarning2")}</h3>
               </div>
             </div>
           </div>
@@ -161,17 +139,16 @@ export const SettingMenu = ({
             <WhitelistManager
               whitelistedUsers={whitelistedUsers}
               onWhitelistUpdate={onWhitelistUpdate}
-              lang={lang}
             />
           </div>
 
           {/* Action Buttons */}
           <div className="btn-container">
             <button className="btn" type="button" onClick={() => setSettingState(false)}>
-              {t(lang, "cancel")}
+              {t("cancel")}
             </button>
             <button className="btn" type="submit">
-              {t(lang, "save")}
+              {t("save")}
             </button>
           </div>
         </div>

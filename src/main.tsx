@@ -44,7 +44,7 @@ import { Toolbar } from "./components/Toolbar";
 import { Unfollowing } from "./components/Unfollowing";
 import { Timings } from "./model/timings";
 import { loadCachedScanResults, loadTimings, loadWhitelist, saveCachedScanResults, saveTimings, saveWhitelist } from "./utils/whitelist-manager";
-import { getInitialLanguage, Language, saveLanguage, t } from "./utils/i18n";
+import { t } from "./utils/i18n";
 
 const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 const isLocalPreview = LOCAL_PREVIEW_HOSTS.has(location.hostname);
@@ -146,8 +146,6 @@ function App() {
     loadCachedScanResults(),
   );
 
-  const [lang, setLang] = useState<Language>(() => getInitialLanguage());
-
   const [scanningPaused, setScanningPaused] = useState(false);
   const scanningPausedRef = React.useRef(false);
 
@@ -158,12 +156,6 @@ function App() {
       return next;
     });
   };
-
-  const handleLanguageChange = (newLang: Language) => {
-    setLang(newLang);
-    saveLanguage(newLang);
-  };
-
 
   let isActiveProcess: boolean;
   switch (state.status) {
@@ -203,7 +195,7 @@ function App() {
     });
     setToast({
       show: true,
-      text: t(lang, "loadedFromCache", cachedScan.results.length),
+      text: t("loadedFromCache", cachedScan.results.length),
     });
   };
 
@@ -255,7 +247,7 @@ function App() {
       return;
     }
     if (state.selectedResults.length > 0) {
-      if (!confirm("Changing filter options will clear selected users")) {
+      if (!confirm(t("filterChangeClearsSelection"))) {
         // Force re-render. Bit of a hack but had an issue where the checkbox state was still
         // changing in the UI even even when not confirming. So updating the state fixes this
         // by synchronizing the checkboxes with the filter statuses in the state.
@@ -437,7 +429,7 @@ function App() {
             for (let sec = waitSeconds; sec > 0; sec--) {
               setToast({
                 show: true,
-                text: t(lang, "rateLimitPause", sec),
+                text: t("rateLimitPause", sec),
               });
               await sleep(1000);
             }
@@ -470,7 +462,7 @@ function App() {
         );
         setToast({
           show: true,
-          text: t(lang, "sleepingSafety", Math.round(longSleepVar / 1000)),
+          text: t("sleepingSafety", Math.round(longSleepVar / 1000)),
         });
         await sleep(longSleepVar);
       }
@@ -532,7 +524,7 @@ function App() {
         setState(prevState =>
           prevState.status === "scanning" ? { ...prevState, isScanningActive: false } : prevState,
         );
-        setToast({ show: true, text: t(lang, "scanFailedFollowing") });
+        setToast({ show: true, text: t("scanFailedFollowing") });
         return;
       }
 
@@ -560,7 +552,7 @@ function App() {
 
         setToast({
           show: true,
-          text: t(lang, "indexingFollowersProgress", followersCount),
+          text: t("indexingFollowersProgress", followersCount),
         });
 
         return true;
@@ -583,7 +575,7 @@ function App() {
         );
         setToast({
           show: true,
-          text: t(lang, "scanFailedFollowers"),
+          text: t("scanFailedFollowers"),
         });
         return;
       }
@@ -628,7 +620,7 @@ function App() {
 
         setToast({
           show: true,
-          text: t(lang, "scanningFollowingProgress", checkedCount),
+          text: t("scanningFollowingProgress", checkedCount),
         });
 
         return true;
@@ -646,7 +638,7 @@ function App() {
         );
         setToast({
           show: true,
-          text: t(lang, "scanFailedFollowing"),
+          text: t("scanFailedFollowing"),
         });
         return;
       }
@@ -675,8 +667,8 @@ function App() {
       setToast({
         show: true,
         text: scanIsComplete
-          ? t(lang, "scanCompleted")
-          : t(lang, "partialScanInterrupted", checkedCount),
+          ? t("scanCompleted")
+          : t("partialScanInterrupted", checkedCount),
       });
     };
     scan();
@@ -745,7 +737,7 @@ function App() {
           if (isActionBlocked) {
             setToast({
               show: true,
-              text: t(lang, "actionBlockedWarning"),
+              text: t("actionBlockedWarning"),
             });
             break;
           }
@@ -777,7 +769,7 @@ function App() {
         if (counter % 5 === 0) {
           setToast({
             show: true,
-            text: t(lang, "sleepingSafety", `${Math.round(timings.timeToWaitAfterFiveUnfollows / 60000)}m`),
+            text: t("sleepingSafety", `${Math.round(timings.timeToWaitAfterFiveUnfollows / 60000)}m`),
           });
           await sleep(timings.timeToWaitAfterFiveUnfollows);
         }
@@ -792,7 +784,7 @@ function App() {
   let markup: React.JSX.Element;
   switch (state.status) {
     case "initial":
-      markup = <NotSearching onScan={onScan} lang={lang} cachedScan={cachedScan} onLoadCached={onLoadCached}></NotSearching>;
+      markup = <NotSearching onScan={onScan} cachedScan={cachedScan} onLoadCached={onLoadCached}></NotSearching>;
       break;
 
     case "scanning": {
@@ -805,7 +797,6 @@ function App() {
         scanningPaused={scanningPaused}
         UserCheckIcon={UserCheckIcon}
         UserUncheckIcon={UserUncheckIcon}
-        lang={lang}
       ></Searching>;
       break;
     }
@@ -814,7 +805,6 @@ function App() {
       markup = <Unfollowing
         state={state}
         handleUnfollowFilter={handleUnfollowFilter}
-        lang={lang}
       ></Unfollowing>;
       break;
 
@@ -837,8 +827,6 @@ function App() {
           currentTimings={timings}
           whitelistedUsers={state.status === "scanning" ? state.whitelistedResults : loadWhitelist()}
           onWhitelistUpdate={onWhitelistUpdate}
-          lang={lang}
-          onLanguageChange={handleLanguageChange}
         ></Toolbar>
 
         {markup}
@@ -850,9 +838,9 @@ function App() {
 }
 
 if (location.hostname !== INSTAGRAM_HOSTNAME && !isLocalPreview) {
-  alert("Can be used only on Instagram routes");
+  alert(t("hostGuardInstagramOnly"));
 } else {
-  document.title = "InstagramUnfollowers";
+  document.title = t("documentTitle");
   document.body.innerHTML = "";
   render(<App />, document.body);
 }
