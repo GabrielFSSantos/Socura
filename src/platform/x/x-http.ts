@@ -74,8 +74,18 @@ export function buildXApiHeaders(kind: XApiHeaderKind): Record<string, string> {
   return headers;
 }
 
+/**
+ * Indícios de sessão legíveis no JS. `auth_token` é HttpOnly e não entra em document.cookie,
+ * mas ainda é enviado em fetch com credentials:include.
+ */
 export function hasXSessionCookies(): boolean {
-  return Boolean(getCookie("auth_token") && getCookie("ct0"));
+  if (getCookie("ct0")) {
+    return true;
+  }
+  if (getCookie("twid")) {
+    return true;
+  }
+  return Boolean(getCookie("auth_token"));
 }
 
 export async function fetchXApiJson(
@@ -104,10 +114,6 @@ export async function resolveXViewerId(): Promise<string | null> {
     cachedViewerId = fromTwid;
     return fromTwid;
   }
-  if (!hasXSessionCookies()) {
-    cachedViewerId = null;
-    return null;
-  }
   const res = await fetchXApiJson("account/verify_credentials.json?skip_status=true");
   if (!res.ok) {
     cachedViewerId = null;
@@ -120,9 +126,6 @@ export async function resolveXViewerId(): Promise<string | null> {
 }
 
 export async function assertXSession(): Promise<void> {
-  if (!hasXSessionCookies()) {
-    throw new PlatformApiError(401, "X session cookies missing", false, "session");
-  }
   const viewerId = await resolveXViewerId();
   if (!viewerId) {
     throw new PlatformApiError(401, "X viewer id not found", false, "session");

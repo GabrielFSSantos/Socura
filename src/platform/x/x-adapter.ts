@@ -15,7 +15,6 @@ import {
 import { GraphPage, GraphUser, PlatformApiError, SocialPlatformAdapter, UnfollowResult } from "../types";
 import { fetchXListGraphQL } from "./x-graphql-list";
 import {
-  assertXSession,
   fetchXApiJson,
   hasXSessionCookies,
   parseViewerIdFromTwidCookie,
@@ -84,11 +83,10 @@ export const xAdapter: SocialPlatformAdapter = {
 
   assertRuntime(): void {
     if (!hasXSessionCookies()) {
-      throw new PlatformApiError(401, "X session not found (auth_token / ct0)", false, "session");
+      console.warn(
+        "Social Unfollowers: cookie ct0/twid não visível no JS; se o scan falhar, recarregue x.com e tente de novo.",
+      );
     }
-    void assertXSession().catch(() => {
-      // validação assíncrona completa no primeiro fetch
-    });
   },
 
   getViewerId(): string | null {
