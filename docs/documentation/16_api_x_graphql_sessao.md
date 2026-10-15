@@ -24,7 +24,10 @@ Headers típicos nas requisições internas:
 - `x-csrf-token`: valor de `ct0`
 - `x-twitter-auth-type`: `OAuth2Session`
 - `x-twitter-active-user`: `yes`
-- `content-type`: `application/x-www-form-urlencoded` (POST) ou `application/json` (GET com query)
+- GET de listas: **sem** `content-type: application/json` (ver `buildXApiHeaders` em `x-http.ts`)
+- POST: `application/x-www-form-urlencoded`
+- `referer` / `origin`: `https://x.com/`
+- Bearer: token público da página (fallback em `x-constants.ts`) via `resolveXBearerToken()`
 
 ## Endpoints usados no MVP (REST 1.1 interno)
 

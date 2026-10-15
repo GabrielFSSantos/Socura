@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "id_str": "20001",
+      "screen_name": "following_only",
+      "name": "Following Only",
+      "profile_image_url_https": "https://example.com/b.png",
+      "verified": true,
+      "protected": false
+    }
+  ],
+  "next_cursor_str": "0"
+}

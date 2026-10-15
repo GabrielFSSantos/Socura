@@ -29,6 +29,6 @@ Status: **concluído para o MVP** (evidência nos capítulos linkados).
 
 ## Pronto para merge
 
-- [x] Gate (`npm ci`, `build`, `test:graph-index`)
-- [ ] Scan + unfollow manuais em conta de teste X — **QA humano** antes de release público
+- [x] Gate (`npm ci`, `build`, `test:unit`, e2e preview)
+- [ ] Scan X ao vivo — `npm run e2e:live` após `e2e:record` (ou QA manual em conta de teste)
 - [x] decision-register D-011+

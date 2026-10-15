@@ -115,10 +115,14 @@ const messages = {
   scanCompleted: "Escaneamento concluído!",
   scanFailedFollowing: "Falha no escaneamento: não foi possível carregar sua lista de seguidos.",
   scanFailedFollowers: "Falha no escaneamento: não foi possível carregar sua lista de seguidores.",
+  scanFailedXSession:
+    "Sessão do X inválida ou expirada. Atualize x.com, confira login e cole o script de novo.",
+  scanFailedXApi:
+    "O X recusou a requisição (autenticação). Abra x.com em outra aba, recarregue e tente outra vez.",
   indexingFollowersProgress: "Indexando seguidores (%s carregados)...",
   scanningFollowingProgress: "Verificando seguidos (%s revisados)...",
   partialScanInterrupted: "Escaneamento parcial: %s contas verificadas, mas o escaneamento foi interrompido.",
-  rateLimitPause: "Cooldown do Instagram ativo. Pausando %s segundos antes de tentar novamente...",
+  rateLimitPause: "Limite de requisições ativo. Pausando %s segundos antes de tentar novamente...",
   sleepingSafety: "Aguardando %s segundos para evitar bloqueio temporário",
   loadedFromCache: "%s contas carregadas do cache!",
   actionBlockedWarning:

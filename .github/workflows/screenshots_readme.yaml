@@ -1,0 +1,23 @@
+name: Regenerate README screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run build
+      - run: npm run screenshots:readme
+      - name: Upload assets artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-assets
+          path: assets/*.png

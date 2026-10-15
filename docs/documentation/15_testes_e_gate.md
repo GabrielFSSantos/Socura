@@ -2,55 +2,51 @@
 
 ## Gate recomendado
 
+Pré-requisito WSL (uma vez): [`Workspaces/_shared/dev-runtime/README.md`](../../../Workspaces/_shared/dev-runtime/README.md) — `~/bin/dev-runtime-install.sh`.
+
 ```bash
 npm ci
 npm run build
-npm run test:graph-index
+npm run test:unit
+npm run e2e:live -- --grep preview
 ```
 
-Lint (opcional até limpeza do débito upstream):
+Meta-workspace: `harness/checks/run-gate.sh` (mesmos passos + smoke e2e preview).
 
-```bash
-npx eslint "src/**/*.{ts,tsx}" "scripts/**/*.js"
-```
-
-Meta-workspace Social Unfollowers: `harness/checks/run-gate.sh` (`npm ci` + `build` + `test:graph-index`).
-
-## Testes automatizados
+## Testes unitários (`npm run test:unit`)
 
 | Script | Escopo |
 | --- | --- |
-| `npm run test:graph-index` | `createGraphUserIndex` / `isGraphUserInIndex` (`scripts/test-graph-index.ts`, via `tsx`) |
+| `test:graph-index` | Índice dual id + username |
+| `test:x-list-parse` | Parser REST X + `twid` |
 
-## Testes manuais — preview
+Fixtures em `tests/fixtures/x/`.
 
-1. `npm run build` → `public/preview.html` ou `preview-x.html`
-2. Iniciar escaneamento → lista mock
-3. Settings, filtros, whitelist
-4. Console sem erros
+## Playwright (`npm run e2e:live`)
 
-## Testes manuais — Instagram
+| Spec | Requisito |
+| --- | --- |
+| `e2e/preview-smoke.spec.ts` | Sempre (preview IG + X) |
+| `e2e/x-live-scan.spec.ts` | `npm run e2e:record` antes (sessão gitignored) |
 
-Conta de teste com poucos seguidores/seguindo:
+Servidor estático: `scripts/e2e-static-server.mjs` (porta 4173).
 
-1. Colar bundle em `www.instagram.com`
-2. Scan completo
-3. Whitelist → tab `non_whitelisted`
-4. Unfollow de 1 conta de teste
-5. Pausar scan no meio → `scanIncomplete` desabilita unfollow em massa
+## Testes manuais — Instagram / X
 
-## Testes manuais — X
+Conta de teste; ver [12_fluxo_ponta_a_ponta.md](12_fluxo_ponta_a_ponta.md) e [17_fluxo_escaneamento_x.md](17_fluxo_escaneamento_x.md).
 
-Mesmo roteiro em `x.com` (conta de teste, baixo risco). Ver [17_fluxo_escaneamento_x.md](17_fluxo_escaneamento_x.md).
+Debug X: [18_debug_x_sessao.md](18_debug_x_sessao.md).
 
-## Segurança (checklist)
+## Screenshots README
 
-- Adapters usam `fetch` para APIs no mesmo site (`instagram.com` / `x.com`); avatares fallback podem usar Dicebear em preview/placeholder.
-- Nenhum envio de credenciais a servidores do projeto.
+```bash
+npm run build
+npm run screenshots:readme
+```
 
 ## CI
 
 - `build_and_deploy_pages.yaml` — build e deploy
-- `protect_index_html.yaml` — impede edição manual do bloco do script em `public/index.html` (textos da landing podem ser editados fora do bundle)
+- `protect_index_html.yaml` — bundle em `public/index.html`
 
-Itens futuros: [engineering_backlog.md](engineering_backlog.md).
+Workflow opcional `workflow_dispatch` para screenshots (não bloqueia merge).

@@ -17,6 +17,7 @@ Ferramenta para descobrir **quem você segue mas não te segue de volta** no **I
    - Windows / Linux: `Ctrl + Shift + J`
    - macOS: `⌘ + ⌥ + I`
 5. Cole o script e pressione `Enter`. A interface do Social Unfollowers será exibida.
+   - Se o navegador pedir confirmação antes de colar, digite **`allow pasting`** (em inglês) na console e pressione Enter; depois cole de novo. É proteção padrão do Chrome/Edge — revise o código na [página do projeto](https://gabrielfssantos.github.io/Social-Unfollowers/) ou no repositório antes de colar.
    <br/><img src="./assets/initial.png" alt="Tela inicial" />
 6. Clique em **Iniciar escaneamento** (ou **Carregar escaneo anterior** para abrir resultados salvos).
 7. Durante o escaneamento, as contas vão aparecendo e o status de follow-back é atualizado.
@@ -27,7 +28,11 @@ Ferramenta para descobrir **quem você segue mas não te segue de volta** no **I
    <br/><img src="./assets/settings.png" alt="Configurações" />
 10. Marque os usuários desejados e use **Deixar de seguir** quando o escaneamento terminar.
 
-O **mesmo** script detecta a rede pelo site aberto (`instagram.com` vs `x.com`). No X, o fluxo é equivalente (scan, lista branca, unfollow em fila). Detalhes: [docs/documentation/17_fluxo_escaneamento_x.md](docs/documentation/17_fluxo_escaneamento_x.md).
+O **mesmo** script detecta a rede pelo site aberto (`instagram.com` vs `x.com`). No X, o fluxo é equivalente (scan, lista branca, unfollow em fila).
+
+<br/><img src="./assets/initial_x.png" alt="Interface no preview X" />
+
+Detalhes: [docs/documentation/17_fluxo_escaneamento_x.md](docs/documentation/17_fluxo_escaneamento_x.md). Problemas de sessão/401: [18_debug_x_sessao.md](docs/documentation/18_debug_x_sessao.md).
 
 ## Uso no celular (Android)
 
@@ -61,7 +66,10 @@ Guia completo do código, fluxos, API Instagram, build e gate:
 - `npm run build` — gera `dist/dist.js`
 - `npm run build-dev` — watch com recarga
 - Preview local: `public/preview.html` (Instagram) ou `public/preview-x.html` (X)
-- `npm run test:graph-index` — teste unitário do índice de seguidores
+- `npm run test:unit` — testes unitários (índice + parser X)
+- `npm run e2e:record` — gravar sessão X (uma vez) → `e2e/.auth/storage-state.json`
+- `npm run e2e:live` — smoke no preview; scan real no X se a sessão existir
+- `npm run screenshots:readme` — regenerar PNGs em `assets/` (após `build`)
 
 O workflow de CI atualiza o bundle embutido em `public/index.html`. Evite editar o bloco do script manualmente; textos da landing (fora do bundle) podem ser ajustados conforme [`docs/documentation/02_build_webpack_deploy_github_pages.md`](docs/documentation/02_build_webpack_deploy_github_pages.md).
 

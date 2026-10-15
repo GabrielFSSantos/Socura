@@ -4,3 +4,7 @@ dist/
 .idea/
 .DS_Store
 bun.lockb
+e2e/.auth/
+e2e/artifacts/
+playwright-report/
+test-results/

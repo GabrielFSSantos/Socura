@@ -528,7 +528,16 @@ if (!resolvedAdapter) {
   alert(t("hostGuardUnsupported"));
 } else {
   setActiveAdapter(resolvedAdapter);
-  document.title = resolvedAdapter.documentTitle;
-  document.body.innerHTML = "";
-  render(<App />, document.body);
+  try {
+    resolvedAdapter.assertRuntime();
+    document.title = resolvedAdapter.documentTitle;
+    document.body.innerHTML = "";
+    render(<App />, document.body);
+  } catch {
+    const msg =
+      resolvedAdapter.id === "x"
+        ? t("scanFailedXSession")
+        : t("hostGuardUnsupported");
+    alert(msg);
+  }
 }

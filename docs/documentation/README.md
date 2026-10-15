@@ -24,6 +24,7 @@ Referência para **build**, **UI Preact**, **API Instagram**, **scan**, **whitel
 | 15 | [15_testes_e_gate.md](15_testes_e_gate.md) | Gate, testes manuais |
 | 16 | [16_api_x_graphql_sessao.md](16_api_x_graphql_sessao.md) | API X (REST 1.1, sessão) |
 | 17 | [17_fluxo_escaneamento_x.md](17_fluxo_escaneamento_x.md) | Scan/unfollow no X |
+| 18 | [18_debug_x_sessao.md](18_debug_x_sessao.md) | Diagnóstico 401 / GraphQL |
 | — | [appendix_chaves_localStorage.md](appendix_chaves_localStorage.md) | Chaves `iu_ig_*` / `iu_x_*` |
 | — | [appendix_contratos_api_instagram.md](appendix_contratos_api_instagram.md) | URLs e respostas IG |
 | — | [appendix_contratos_api_x.md](appendix_contratos_api_x.md) | URLs e respostas X |

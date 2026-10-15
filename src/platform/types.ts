@@ -26,15 +26,19 @@ export interface UnfollowResult {
   readonly message?: string;
 }
 
+export type PlatformApiErrorKind = "session" | "api" | "rate_limit";
+
 export class PlatformApiError extends Error {
   readonly status: number;
   readonly retryable: boolean;
+  readonly kind: PlatformApiErrorKind;
 
-  constructor(status: number, message: string, retryable = false) {
+  constructor(status: number, message: string, retryable = false, kind: PlatformApiErrorKind = "api") {
     super(message);
     this.name = "PlatformApiError";
     this.status = status;
     this.retryable = retryable;
+    this.kind = kind;
     Object.setPrototypeOf(this, PlatformApiError.prototype);
   }
 }

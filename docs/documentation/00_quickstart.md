@@ -4,6 +4,7 @@
 
 - Node.js 16+ (recomendado 18 ou 20; ver `.nvmrc`)
 - npm
+- WSL: Playwright Chromium global — `~/bin/dev-runtime-install.sh` (ver `Workspaces/_shared/dev-runtime/README.md`)
 
 ## Desenvolvimento local
 
@@ -12,7 +13,9 @@ cd Social-Unfollowers
 npm install
 npm run build          # produção → dist/dist.js + atualiza public/index.html
 npm run build-dev      # build + webpack-dev-server com live reload
-npm run test:graph-index   # testes unitários do índice de seguidores
+npm run test:unit          # testes unitários (índice + parser X)
+npm run e2e:live -- --grep preview   # smoke UI (após build + playwright install chromium)
+npm run e2e:record         # uma vez: login no X → e2e/.auth/storage-state.json
 ```
 
 ## Preview sem rede social
@@ -31,6 +34,7 @@ No preview, scan e unfollow **não** chamam APIs reais.
 2. Copie o script (botão na página ou conteúdo gerado em `public/index.html` após o build).
 3. Em **`https://www.instagram.com/`** ou **`https://x.com/`**, logado, abra o DevTools (console).
 4. Cole o script e confirme a interface overlay.
+   - Aviso do Chrome/Edge (“Don’t paste code…”): na console, digite `allow pasting` e Enter; em seguida cole o script outra vez.
 
 O bootstrap usa `resolveAdapter(location.hostname)`: hosts suportados são Instagram (`www.instagram.com`), X (`x.com`, `twitter.com`, etc.) ou preview local. Outros domínios exibem `hostGuardUnsupported`.
 
