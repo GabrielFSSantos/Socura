@@ -1,14 +1,11 @@
 # Testes e gate
 
-## Situação atual
-
-O repositório **não** define `npm test`. Validação principal é build + lint.
-
 ## Gate recomendado
 
 ```bash
 npm ci
 npm run build
+npm run test:graph-index
 ```
 
 Lint (opcional até limpeza do débito upstream):
@@ -17,33 +14,43 @@ Lint (opcional até limpeza do débito upstream):
 npx eslint "src/**/*.{ts,tsx}" "scripts/**/*.js"
 ```
 
-Desenvolvedores com meta-workspace Social Unfollowers podem usar o script `run-gate.sh` do harness externo (`npm ci` + `build`).
+Meta-workspace Social Unfollowers: `harness/checks/run-gate.sh` (`npm ci` + `build` + `test:graph-index`).
+
+## Testes automatizados
+
+| Script | Escopo |
+| --- | --- |
+| `npm run test:graph-index` | `createGraphUserIndex` / `isGraphUserInIndex` (`scripts/test-graph-index.ts`, via `tsx`) |
 
 ## Testes manuais — preview
 
-1. `npm run build-dev` ou servir `public/preview.html`
+1. `npm run build` → `public/preview.html` ou `preview-x.html`
 2. Iniciar escaneamento → lista mock
-3. Alternar idioma, settings, filtros
-4. Confirmar que não há erros no console
+3. Settings, filtros, whitelist
+4. Console sem erros
 
 ## Testes manuais — Instagram
 
-Usar conta de teste com poucos seguidores/seguindo:
+Conta de teste com poucos seguidores/seguindo:
 
 1. Colar bundle em `www.instagram.com`
-2. Scan completo → comparar contagem com expectativa
-3. Whitelist um usuário → não aparece em `non_whitelisted`
-4. Unfollow de 1 conta de teste → verificar no app Instagram
-5. Simular pausa durante scan (botão pause)
+2. Scan completo
+3. Whitelist → tab `non_whitelisted`
+4. Unfollow de 1 conta de teste
+5. Pausar scan no meio → `scanIncomplete` desabilita unfollow em massa
+
+## Testes manuais — X
+
+Mesmo roteiro em `x.com` (conta de teste, baixo risco). Ver [17_fluxo_escaneamento_x.md](17_fluxo_escaneamento_x.md).
+
+## Segurança (checklist)
+
+- Adapters usam `fetch` para APIs no mesmo site (`instagram.com` / `x.com`); avatares fallback podem usar Dicebear em preview/placeholder.
+- Nenhum envio de credenciais a servidores do projeto.
 
 ## CI
 
 - `build_and_deploy_pages.yaml` — build e deploy
-- `protect_index_html.yaml` — impede edição manual de `public/index.html`
+- `protect_index_html.yaml` — impede edição manual do bloco do script em `public/index.html` (textos da landing podem ser editados fora do bundle)
 
-## Melhorias futuras
-
-- Testes unitários para `getUsersForDisplay`, índice de seguidores, parsers
-- Smoke e2e opcional com preview (`?preview=scanning`)
-
-Itens no [engineering_backlog.md](engineering_backlog.md).
+Itens futuros: [engineering_backlog.md](engineering_backlog.md).

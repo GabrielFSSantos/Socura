@@ -1,24 +1,40 @@
 # Apêndice — chaves localStorage
 
-Prefixo comum: `iu_` (Instagram Unfollowers).
+Chaves derivadas de `getActiveAdapter().storageKeyPrefix` (`src/platform/storage-keys.ts`).
 
-| Chave | Constante | Conteúdo |
+## Por plataforma
+
+| Prefixo | Rede | Exemplo de chave |
 | --- | --- | --- |
-| `iu_whitelisted-results` | `WHITELISTED_RESULTS_STORAGE_KEY` | JSON array de `UserNode` |
-| `iu_timings` | `TIMINGS_STORAGE_KEY` | JSON objeto `Timings` |
-| `iu_last-scan-results` | `LAST_SCAN_RESULTS_STORAGE_KEY` | JSON array de não-seguidores |
-| `iu_last-scan-time` | `LAST_SCAN_TIMESTAMP_STORAGE_KEY` | Epoch ms string |
+| `iu_ig_` | Instagram | `iu_ig_whitelisted-results` |
+| `iu_x_` | X.com | `iu_x_whitelisted-results` |
+
+| Sufixo | Conteúdo |
+| --- | --- |
+| `whitelisted-results` | JSON array de `UserNode` |
+| `timings` | JSON objeto `Timings` |
+| `last-scan-results` | JSON array de não-seguidores |
+| `last-scan-time` | Epoch ms (string) |
+
+## Legado Instagram (`iu_*` sem rede)
+
+No Instagram (e preview Instagram), leitura com **fallback** para:
+
+| Chave legada | Equivalente novo |
+| --- | --- |
+| `iu_whitelisted-results` | `iu_ig_whitelisted-results` |
+| `iu_timings` | `iu_ig_timings` |
+| `iu_last-scan-results` | `iu_ig_last-scan-results` |
+| `iu_last-scan-time` | `iu_ig_last-scan-time` |
+
+Novas gravações usam apenas o prefixo `iu_ig_`.
 
 ## Chaves obsoletas
 
 | Chave | Nota |
 | --- | --- |
-| `iu_language` | Usada em versões anteriores (EN/ES). Pode ser ignorada ou removida manualmente; a UI atual não persiste idioma. |
+| `iu_language` | Versões antigas (EN/ES); ignorar |
 
 ## Origem dos dados
 
-Todas as chaves são gravadas apenas no origin onde o script roda (`https://www.instagram.com` em produção).
-
-## Migração multi-plataforma
-
-Novas redes devem usar prefixo distinto (ex.: `su_x_whitelist`) para não colidir se o mesmo origin servir múltiplos scripts no futuro — ver plano multi-plataforma.
+Dados ficam no origin onde o script roda (`instagram.com` ou `x.com`); não há sincronização entre redes.

@@ -6,37 +6,11 @@ import { Typename, UserNode } from "./model/user";
 import { Toast } from "./components/Toast";
 import { UserCheckIcon } from "./components/icons/UserCheckIcon";
 import { UserUncheckIcon } from "./components/icons/UserUncheckIcon";
-import {
-  DEFAULT_TIME_BETWEEN_SEARCH_CYCLES,
-  DEFAULT_TIME_BETWEEN_UNFOLLOWS,
-  DEFAULT_TIME_TO_WAIT_AFTER_FIVE_SEARCH_CYCLES,
-  DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS,
-  DEFAULT_USERS_PER_SEARCH_CYCLE,
-  FOLLOWERS_PAGE_SAFETY_LIMIT,
-  FOLLOWING_PAGE_SAFETY_LIMIT,
-  CHECKS_BEFORE_LONG_SLEEP,
-  INSTAGRAM_ASBD_ID,
-  INSTAGRAM_HOSTNAME,
-  INSTAGRAM_WEB_APP_ID,
-  RATE_LIMIT_COOLDOWN_SECONDS,
-} from "./constants/constants";
-import {
-  addFollowerToIndex,
-  assertUnreachable,
-  createFollowerIndex,
-  fetchFriendshipsPage,
-  FriendshipsListKind,
-  FriendshipsPage,
-  getCookie,
-  getCurrentPageUnfollowers,
-  getUsersForDisplay,
-  InstagramApiError,
-  isUserInFollowerIndex,
-  RawFriendshipUser,
-  rawFriendshipUserToUserNode,
-  sleep,
-  unfollowUserUrlGenerator,
-} from "./utils/utils";
+import { assertUnreachable, getCurrentPageUnfollowers, getUsersForDisplay } from "./utils/utils";
+import { resolveAdapter } from "./platform/resolve-adapter";
+import { getActiveAdapter, setActiveAdapter } from "./platform/runtime";
+import { runAccountScan } from "./services/scan-service";
+import { runUnfollowQueue } from "./services/unfollow-queue";
 import { NotSearching } from "./components/NotSearching";
 import { State } from "./model/state";
 import { Searching } from "./components/Searching";
@@ -48,6 +22,8 @@ import { t } from "./utils/i18n";
 
 const LOCAL_PREVIEW_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 const isLocalPreview = LOCAL_PREVIEW_HOSTS.has(location.hostname);
+const previewPlatformParam = new URLSearchParams(location.search).get("platform");
+const isPreviewX = previewPlatformParam === "x";
 
 const _avatarUrl = (seed: string): string =>
   `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=0f172a,1f2937,312e81&fontFamily=Verdana`;
@@ -127,13 +103,14 @@ function App() {
   });
 
   const [timings, setTimings] = useState<Timings>(() => {
+    const defaults = getActiveAdapter().getDefaultTimings();
     const storedTimings = loadTimings();
     return {
-      timeBetweenSearchCycles: storedTimings?.timeBetweenSearchCycles ?? DEFAULT_TIME_BETWEEN_SEARCH_CYCLES,
-      timeToWaitAfterFiveSearchCycles: storedTimings?.timeToWaitAfterFiveSearchCycles ?? DEFAULT_TIME_TO_WAIT_AFTER_FIVE_SEARCH_CYCLES,
-      timeBetweenUnfollows: storedTimings?.timeBetweenUnfollows ?? DEFAULT_TIME_BETWEEN_UNFOLLOWS,
-      timeToWaitAfterFiveUnfollows: storedTimings?.timeToWaitAfterFiveUnfollows ?? DEFAULT_TIME_TO_WAIT_AFTER_FIVE_UNFOLLOWS,
-      usersPerSearchCycle: storedTimings?.usersPerSearchCycle ?? DEFAULT_USERS_PER_SEARCH_CYCLE,
+      timeBetweenSearchCycles: storedTimings?.timeBetweenSearchCycles ?? defaults.timeBetweenSearchCycles,
+      timeToWaitAfterFiveSearchCycles: storedTimings?.timeToWaitAfterFiveSearchCycles ?? defaults.timeToWaitAfterFiveSearchCycles,
+      timeBetweenUnfollows: storedTimings?.timeBetweenUnfollows ?? defaults.timeBetweenUnfollows,
+      timeToWaitAfterFiveUnfollows: storedTimings?.timeToWaitAfterFiveUnfollows ?? defaults.timeToWaitAfterFiveUnfollows,
+      usersPerSearchCycle: storedTimings?.usersPerSearchCycle ?? defaults.usersPerSearchCycle,
     };
   });
 
@@ -392,392 +369,95 @@ function App() {
   }, [isActiveProcess, state]);
 
   useEffect(() => {
-    // Fetches one page, retrying with backoff on rate limits / network errors.
-    // `blocked` is true when retries were exhausted for such a transient error
-    // (the scan should stop); false means a different, non-retryable error
-    // (e.g. 404 / unavailable account), which callers may choose to skip.
-    type PageResult =
-      | { readonly ok: true; readonly page: FriendshipsPage }
-      | { readonly ok: false; readonly blocked: boolean };
-
-    const fetchPageWithRetry = async (
-      kind: FriendshipsListKind,
-      maxId?: string,
-      count?: number,
-      userId?: string,
-    ): Promise<PageResult> => {
-      let retries = 0;
-      const maxRetries = 3;
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      while (true) {
-        try {
-          return { ok: true, page: await fetchFriendshipsPage(kind, maxId, count, userId) };
-        } catch (e: any) {
-          const status = e?.status;
-          const message = String(e?.message ?? "");
-          const isRateLimitOrSoftBlock =
-            (e instanceof InstagramApiError || e?.name === "InstagramApiError") &&
-            (status === 429 || /feedback_required|checkpoint|rate limit|please wait/i.test(message));
-          const isNetworkError = e instanceof TypeError || /fetch|network/i.test(message);
-          const isTransient = isRateLimitOrSoftBlock || isNetworkError;
-
-          if (isTransient && retries < maxRetries) {
-            retries++;
-            const waitSeconds = isRateLimitOrSoftBlock
-              ? RATE_LIMIT_COOLDOWN_SECONDS * retries
-              : 5 * retries;
-            for (let sec = waitSeconds; sec > 0; sec--) {
-              setToast({
-                show: true,
-                text: t("rateLimitPause", sec),
-              });
-              await sleep(1000);
-            }
-            setToast({ show: false });
-            continue;
-          }
-          console.error(`${kind} request failed${userId ? ` for ${userId}` : ""}:`, e);
-          return { ok: false, blocked: isTransient };
-        }
-      }
-    };
-
-    let requestsSinceLongSleep = 0;
-    const paceRequest = async () => {
-      // Pause scanning if user requested so.
-      while (scanningPausedRef.current) {
-        await sleep(1000);
-        console.info("Scan paused");
-      }
-
-      await sleep(Math.floor(Math.random() * 700) + 300);
-      await sleep(Math.floor(Math.random() * (timings.timeBetweenSearchCycles - timings.timeBetweenSearchCycles * 0.7)) + timings.timeBetweenSearchCycles);
-
-      requestsSinceLongSleep++;
-      if (requestsSinceLongSleep >= CHECKS_BEFORE_LONG_SLEEP) {
-        requestsSinceLongSleep = 0;
-        const longSleepVar = Math.max(
-          0,
-          timings.timeToWaitAfterFiveSearchCycles + (Math.random() * 10000 - 5000), // +/- 5 seconds
+    if (state.status !== "scanning" || isLocalPreview) {
+      return;
+    }
+    if (state.percentage === 100) {
+      return;
+    }
+    const adapter = getActiveAdapter();
+    void runAccountScan(adapter, timings, {
+      onToast: text => setToast({ show: true, text }),
+      onClearToast: () => setToast({ show: false }),
+      onFollowersProgress: (followersCount, percentage) => {
+        setState(prev =>
+          prev.status === "scanning"
+            ? { ...prev, percentage, totalScanned: followersCount }
+            : prev,
         );
-        setToast({
-          show: true,
-          text: t("sleepingSafety", Math.round(longSleepVar / 1000)),
-        });
-        await sleep(longSleepVar);
-      }
-      setToast({ show: false });
-    };
-
-    // Walks the viewer's own list (followers or following) page by page. `onPageUsers` is
-    // awaited for each page before the next one is requested and returns
-    // false to stop the walk early. Resolves true only if the whole list was
-    // walked.
-    const fetchList = async (
-      kind: FriendshipsListKind,
-      pageSafetyLimit: number,
-      onPageUsers: (pageUsers: readonly RawFriendshipUser[]) => Promise<boolean>,
-    ): Promise<boolean> => {
-      let maxId: string | undefined;
-      let pagesFetched = 0;
-
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      while (true) {
-        const result = await fetchPageWithRetry(kind, maxId, timings.usersPerSearchCycle);
-        if (!result.ok) {
-          console.error(`Stopping ${kind} scan early.`);
-          return false;
-        }
-        const page = result.page;
-        const pageUsers = page.users ?? [];
-
-        if (!(await onPageUsers(pageUsers))) {
-          return false;
-        }
-
-        const hasMore = Boolean(page.next_max_id) && page.has_more !== false;
-        if (!hasMore || pageUsers.length === 0) {
-          return true;
-        }
-
-        pagesFetched += 1;
-        if (pagesFetched >= pageSafetyLimit) {
-          console.error(`Stopping ${kind} scan early: hit the safety cap of ${pageSafetyLimit} pages.`);
-          return false;
-        }
-        maxId = page.next_max_id;
-
-        await paceRequest();
-      }
-    };
-
-    const scan = async () => {
-      if (state.status !== "scanning" || isLocalPreview) {
-        return;
-      }
-      if (state.percentage === 100) {
-        return;
-      }
-
-      const viewerId = getCookie("ds_user_id");
-      if (viewerId === null) {
-        setState(prevState =>
-          prevState.status === "scanning" ? { ...prevState, isScanningActive: false } : prevState,
-        );
-        setToast({ show: true, text: t("scanFailedFollowing") });
-        return;
-      }
-
-      // Phase 1: Retrieve and index all of the viewer's followers.
-      // We dual-index by ID and normalized lowercase username to guarantee zero false positives.
-      const followerIndex = createFollowerIndex();
-      let followersCount = 0;
-
-      const indexFollowersPage = async (pageUsers: readonly RawFriendshipUser[]): Promise<boolean> => {
-        for (const user of pageUsers) {
-          addFollowerToIndex(followerIndex, user);
-          followersCount++;
-        }
-
-        const followersProgress = Math.min(49, Math.round(50 * (1 - 1 / (1 + followersCount / 150))));
-        setState(prevState =>
-          prevState.status === "scanning"
+      },
+      onFollowingProgress: (checkedCount, percentage, newNonFollowers) => {
+        setState(prev =>
+          prev.status === "scanning"
             ? {
-                ...prevState,
-                percentage: followersProgress,
-                totalScanned: followersCount,
-              }
-            : prevState,
-        );
-
-        setToast({
-          show: true,
-          text: t("indexingFollowersProgress", followersCount),
-        });
-
-        return true;
-      };
-
-      const followersCompleted = await fetchList(
-        "followers",
-        FOLLOWERS_PAGE_SAFETY_LIMIT,
-        indexFollowersPage,
-      );
-
-      if (!followersCompleted) {
-        // If followers list could not be fully loaded, aborting is mandatory.
-        // Proceeding with an incomplete follower index would cause true followers
-        // to be falsely flagged as unfollowers.
-        setState(prevState =>
-          prevState.status === "scanning"
-            ? { ...prevState, isScanningActive: false, scanIncomplete: true }
-            : prevState,
-        );
-        setToast({
-          show: true,
-          text: t("scanFailedFollowers"),
-        });
-        return;
-      }
-
-      // Mark Phase 1 complete at 50%
-      setState(prevState =>
-        prevState.status === "scanning"
-          ? { ...prevState, percentage: 50 }
-          : prevState,
-      );
-
-      // Phase 2: Walk the viewer's following list and check each against the follower index.
-      // Accounts not in the index genuinely do not follow back and are progressively streamed to UI.
-      const nonFollowers: UserNode[] = [];
-      let checkedCount = 0;
-
-      const checkFollowingPage = async (pageUsers: readonly RawFriendshipUser[]): Promise<boolean> => {
-        const newNonFollowersBatch: UserNode[] = [];
-
-        for (const user of pageUsers) {
-          const followsViewer = isUserInFollowerIndex(followerIndex, user);
-          if (!followsViewer) {
-            const node = rawFriendshipUserToUserNode(user, false);
-            nonFollowers.push(node);
-            newNonFollowersBatch.push(node);
-          }
-          checkedCount++;
-        }
-
-        const followingProgress = Math.min(99, 50 + Math.round(50 * (1 - 1 / (1 + checkedCount / 150))));
-
-        setState(prevState =>
-          prevState.status === "scanning"
-            ? {
-                ...prevState,
-                results: newNonFollowersBatch.length > 0 ? [...prevState.results, ...newNonFollowersBatch] : prevState.results,
+                ...prev,
+                results: newNonFollowers.length > 0 ? [...prev.results, ...newNonFollowers] : prev.results,
                 totalScanned: checkedCount,
-                percentage: followingProgress,
+                percentage,
               }
-            : prevState,
+            : prev,
         );
-
-        setToast({
-          show: true,
-          text: t("scanningFollowingProgress", checkedCount),
-        });
-
-        return true;
-      };
-
-      const followingCompleted = await fetchList(
-        "following",
-        FOLLOWING_PAGE_SAFETY_LIMIT,
-        checkFollowingPage,
-      );
-
-      if (!followingCompleted && checkedCount === 0) {
-        setState(prevState =>
-          prevState.status === "scanning" ? { ...prevState, isScanningActive: false } : prevState,
+      },
+      onFollowersFailed: () => {
+        setState(prev =>
+          prev.status === "scanning"
+            ? { ...prev, isScanningActive: false, scanIncomplete: true }
+            : prev,
         );
-        setToast({
-          show: true,
-          text: t("scanFailedFollowing"),
-        });
-        return;
-      }
-
-      const scanIsComplete = followingCompleted;
-
-      if (scanIsComplete || nonFollowers.length > 0) {
-        saveCachedScanResults(nonFollowers);
-        setCachedScan({ results: nonFollowers, timestamp: Date.now() });
-      }
-
-      setState(prevState => {
-        if (prevState.status !== "scanning") {
-          return prevState;
+      },
+      onFollowingFailedEarly: () => {
+        setState(prev =>
+          prev.status === "scanning" ? { ...prev, isScanningActive: false } : prev,
+        );
+      },
+      onComplete: ({ nonFollowers, checkedCount, scanIsComplete }) => {
+        if (scanIsComplete || nonFollowers.length > 0) {
+          saveCachedScanResults(nonFollowers);
+          setCachedScan({ results: nonFollowers, timestamp: Date.now() });
         }
-        return {
-          ...prevState,
-          percentage: 100,
-          scanIncomplete: !scanIsComplete,
-          isScanningActive: false,
-          results: nonFollowers,
-          totalScanned: checkedCount,
-        };
-      });
-
-      setToast({
-        show: true,
-        text: scanIsComplete
-          ? t("scanCompleted")
-          : t("partialScanInterrupted", checkedCount),
-      });
-    };
-    scan();
-    // Dependency array not entirely legit, but works this way. TODO: Find a way to fix.
+        setState(prev => {
+          if (prev.status !== "scanning") {
+            return prev;
+          }
+          return {
+            ...prev,
+            percentage: 100,
+            scanIncomplete: !scanIsComplete,
+            isScanningActive: false,
+            results: nonFollowers,
+            totalScanned: checkedCount,
+          };
+        });
+      },
+      isPaused: () => scanningPausedRef.current,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
 
   useEffect(() => {
-    const unfollow = async () => {
-      if (state.status !== "unfollowing" || isLocalPreview) {
-        return;
-      }
-
-      const csrftoken = getCookie("csrftoken");
-      if (csrftoken === null) {
-        throw new Error("csrftoken cookie is null");
-      }
-
-      let counter = 0;
-      for (const user of state.selectedResults) {
-        counter += 1;
-        // Fix: Changed from Math.floor to Math.round to ensure progress reaches 100%
-        // Math.floor would leave progress at 99% when near completion
-        const percentage = Math.round((counter / state.selectedResults.length) * 100);
-        try {
-          const res = await fetch(unfollowUserUrlGenerator(user.id), {
-            headers: {
-              "content-type": "application/x-www-form-urlencoded",
-              "x-csrftoken": csrftoken,
-              "x-ig-app-id": INSTAGRAM_WEB_APP_ID,
-              "x-asbd-id": INSTAGRAM_ASBD_ID,
-              "x-requested-with": "XMLHttpRequest",
-            },
-            method: "POST",
-            credentials: "same-origin",
-          });
-          const data = (await res.json().catch(() => null)) as any;
-          const isActionBlocked =
-            res.status === 429 ||
-            res.status === 400 ||
-            data?.status === "fail" ||
-            data?.spam === true ||
-            /feedback_required|checkpoint|action_blocked|block/i.test(data?.message ?? "");
-
-          const success = res.ok && data?.status !== "fail" && !isActionBlocked;
-          if (!success) {
-            console.warn(`Unfollow for ${user.username} failed (HTTP ${res.status}):`, data);
+    if (state.status !== "unfollowing" || isLocalPreview) {
+      return;
+    }
+    const adapter = getActiveAdapter();
+    void runUnfollowQueue(adapter, state.selectedResults, timings, {
+      onProgress: (entry, percentage) => {
+        setState(prev => {
+          if (prev.status !== "unfollowing") {
+            return prev;
           }
-          setState(prevState => {
-            if (prevState.status !== "unfollowing") {
-              return prevState;
-            }
-            return {
-              ...prevState,
-              percentage,
-              unfollowLog: [
-                ...prevState.unfollowLog,
-                {
-                  user,
-                  unfollowedSuccessfully: success,
-                },
-              ],
-            };
-          });
-
-          if (isActionBlocked) {
-            setToast({
-              show: true,
-              text: t("actionBlockedWarning"),
-            });
-            break;
-          }
-        } catch (e) {
-          console.error(e);
-          setState(prevState => {
-            if (prevState.status !== "unfollowing") {
-              return prevState;
-            }
-            return {
-              ...prevState,
-              percentage,
-              unfollowLog: [
-                ...prevState.unfollowLog,
-                {
-                  user,
-                  unfollowedSuccessfully: false,
-                },
-              ],
-            };
-          });
-        }
-        // If unfollowing the last user in the list, no reason to wait.
-        if (user === state.selectedResults[state.selectedResults.length - 1]) {
-          break;
-        }
-        await sleep(Math.floor(Math.random() * (timings.timeBetweenUnfollows * 1.2 - timings.timeBetweenUnfollows)) + timings.timeBetweenUnfollows);
-
-        if (counter % 5 === 0) {
-          setToast({
-            show: true,
-            text: t("sleepingSafety", `${Math.round(timings.timeToWaitAfterFiveUnfollows / 60000)}m`),
-          });
-          await sleep(timings.timeToWaitAfterFiveUnfollows);
-        }
-        setToast({ show: false });
-      }
-    };
-    unfollow();
-    // Dependency array not entirely legit, but works this way. TODO: Find a way to fix.
+          return {
+            ...prev,
+            percentage,
+            unfollowLog: [...prev.unfollowLog, entry],
+          };
+        });
+      },
+      onActionBlocked: () => {
+        setToast({ show: true, text: t("actionBlockedWarning") });
+      },
+      onSleepToast: text => setToast({ show: true, text }),
+      onClearToast: () => setToast({ show: false }),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status]);
 
@@ -827,6 +507,7 @@ function App() {
           currentTimings={timings}
           whitelistedUsers={state.status === "scanning" ? state.whitelistedResults : loadWhitelist()}
           onWhitelistUpdate={onWhitelistUpdate}
+          networkLabel={getActiveAdapter().networkLabel}
         ></Toolbar>
 
         {markup}
@@ -837,10 +518,17 @@ function App() {
   );
 }
 
-if (location.hostname !== INSTAGRAM_HOSTNAME && !isLocalPreview) {
-  alert(t("hostGuardInstagramOnly"));
+const resolvedAdapter = resolveAdapter(
+  location.hostname,
+  isLocalPreview,
+  isPreviewX ? "x" : "instagram",
+);
+
+if (!resolvedAdapter) {
+  alert(t("hostGuardUnsupported"));
 } else {
-  document.title = t("documentTitle");
+  setActiveAdapter(resolvedAdapter);
+  document.title = resolvedAdapter.documentTitle;
   document.body.innerHTML = "";
   render(<App />, document.body);
 }

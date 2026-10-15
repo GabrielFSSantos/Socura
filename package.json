@@ -9,7 +9,8 @@
     "build-dev": "npm run build && webpack serve --mode development",
     "build-prod": "npm run build && webpack serve --mode production",
     "update-index": "node scripts/update-index.js public/index.html dist/dist.js",
-    "build": "npm run webpack-build && npm run update-index"
+    "build": "npm run webpack-build && npm run update-index",
+    "test:graph-index": "npx --yes tsx scripts/test-graph-index.ts"
   },
   "babel": {
     "plugins": [

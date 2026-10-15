@@ -18,6 +18,7 @@ interface ToolBarProps {
   setTimings: (timings: Timings) => void;
   whitelistedUsers: readonly UserNode[];
   onWhitelistUpdate: (users: readonly UserNode[]) => void;
+  networkLabel: string;
 }
 
 export const Toolbar = ({
@@ -30,6 +31,7 @@ export const Toolbar = ({
   setTimings,
   whitelistedUsers,
   onWhitelistUpdate,
+  networkLabel,
 }: ToolBarProps) => {
 
   const [settingMenu, setSettingMenu] = useState(false);
@@ -72,7 +74,7 @@ export const Toolbar = ({
           <Logo />
           <div className="logo-text">
             <span>Social Unfollowers</span>
-            <span>Instagram</span>
+            <span>{networkLabel}</span>
           </div>
         </div>
         <div className="toolbar-actions">

@@ -22,8 +22,11 @@ Referência para **build**, **UI Preact**, **API Instagram**, **scan**, **whitel
 | 13 | [13_guia_dev_e_agente.md](13_guia_dev_e_agente.md) | Roteiro dev/agente |
 | 14 | [14_arquitetura_e_manutencao.md](14_arquitetura_e_manutencao.md) | Onde editar cada comportamento |
 | 15 | [15_testes_e_gate.md](15_testes_e_gate.md) | Gate, testes manuais |
-| — | [appendix_chaves_localStorage.md](appendix_chaves_localStorage.md) | Chaves `iu_*` |
-| — | [appendix_contratos_api_instagram.md](appendix_contratos_api_instagram.md) | URLs e respostas |
+| 16 | [16_api_x_graphql_sessao.md](16_api_x_graphql_sessao.md) | API X (REST 1.1, sessão) |
+| 17 | [17_fluxo_escaneamento_x.md](17_fluxo_escaneamento_x.md) | Scan/unfollow no X |
+| — | [appendix_chaves_localStorage.md](appendix_chaves_localStorage.md) | Chaves `iu_ig_*` / `iu_x_*` |
+| — | [appendix_contratos_api_instagram.md](appendix_contratos_api_instagram.md) | URLs e respostas IG |
+| — | [appendix_contratos_api_x.md](appendix_contratos_api_x.md) | URLs e respostas X |
 | — | [engineering_backlog.md](engineering_backlog.md) | Débitos e roadmap técnico |
 
 Índice geral: [docs/README.md](../README.md).

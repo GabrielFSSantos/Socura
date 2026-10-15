@@ -1,6 +1,16 @@
 import { UserNode } from "../model/user";
 import { Timings } from "../model/timings";
-import { WHITELISTED_RESULTS_STORAGE_KEY, TIMINGS_STORAGE_KEY, LAST_SCAN_RESULTS_STORAGE_KEY, LAST_SCAN_TIMESTAMP_STORAGE_KEY } from "../constants/constants";
+import {
+  LEGACY_INSTAGRAM_LAST_SCAN_KEY,
+  LEGACY_INSTAGRAM_LAST_SCAN_TIME_KEY,
+  LEGACY_INSTAGRAM_TIMINGS_KEY,
+  LEGACY_INSTAGRAM_WHITELIST_KEY,
+  lastScanStorageKey,
+  lastScanTimeStorageKey,
+  timingsStorageKey,
+  useLegacyInstagramStorageFallback,
+  whitelistStorageKey,
+} from "../platform/storage-keys";
 import { t } from "./i18n";
 
 /**
@@ -75,7 +85,10 @@ export const importWhitelist = (
  * Clear all whitelist data (caller should confirm with the user)
  */
 export const clearWhitelist = (): void => {
-  localStorage.removeItem(WHITELISTED_RESULTS_STORAGE_KEY);
+  localStorage.removeItem(whitelistStorageKey());
+  if (useLegacyInstagramStorageFallback()) {
+    localStorage.removeItem(LEGACY_INSTAGRAM_WHITELIST_KEY);
+  }
 };
 
 /**
@@ -83,7 +96,10 @@ export const clearWhitelist = (): void => {
  */
 export const loadWhitelist = (): readonly UserNode[] => {
   try {
-    const whitelistedResultsFromStorage = localStorage.getItem(WHITELISTED_RESULTS_STORAGE_KEY);
+    let whitelistedResultsFromStorage = localStorage.getItem(whitelistStorageKey());
+    if (!whitelistedResultsFromStorage && useLegacyInstagramStorageFallback()) {
+      whitelistedResultsFromStorage = localStorage.getItem(LEGACY_INSTAGRAM_WHITELIST_KEY);
+    }
     if (!whitelistedResultsFromStorage) {
       return [];
     }
@@ -99,7 +115,7 @@ export const loadWhitelist = (): readonly UserNode[] => {
  */
 export const saveWhitelist = (whitelistedUsers: readonly UserNode[]): void => {
   try {
-    localStorage.setItem(WHITELISTED_RESULTS_STORAGE_KEY, JSON.stringify(whitelistedUsers));
+    localStorage.setItem(whitelistStorageKey(), JSON.stringify(whitelistedUsers));
   } catch (e) {
     console.warn("Could not save whitelist to storage:", e);
   }
@@ -129,7 +145,10 @@ const isTimings = (value: unknown): value is Timings => {
  * Load timings from localStorage
  */
 export const loadTimings = (): Timings | null => {
-  const timingsFromStorage = localStorage.getItem(TIMINGS_STORAGE_KEY);
+  let timingsFromStorage = localStorage.getItem(timingsStorageKey());
+  if (timingsFromStorage === null && useLegacyInstagramStorageFallback()) {
+    timingsFromStorage = localStorage.getItem(LEGACY_INSTAGRAM_TIMINGS_KEY);
+  }
 
   if (timingsFromStorage === null) {
     return null;
@@ -148,7 +167,7 @@ export const loadTimings = (): Timings | null => {
  */
 export const saveTimings = (timings: Timings): void => {
   try {
-    localStorage.setItem(TIMINGS_STORAGE_KEY, JSON.stringify(timings));
+    localStorage.setItem(timingsStorageKey(), JSON.stringify(timings));
   } catch (e) {
     console.warn("Could not save timings to storage:", e);
   }
@@ -159,8 +178,8 @@ export const saveTimings = (timings: Timings): void => {
  */
 export const saveCachedScanResults = (results: readonly UserNode[]): void => {
   try {
-    localStorage.setItem(LAST_SCAN_RESULTS_STORAGE_KEY, JSON.stringify(results));
-    localStorage.setItem(LAST_SCAN_TIMESTAMP_STORAGE_KEY, String(Date.now()));
+    localStorage.setItem(lastScanStorageKey(), JSON.stringify(results));
+    localStorage.setItem(lastScanTimeStorageKey(), String(Date.now()));
   } catch (e) {
     console.warn("Could not cache scan results:", e);
   }
@@ -171,8 +190,12 @@ export const saveCachedScanResults = (results: readonly UserNode[]): void => {
  */
 export const loadCachedScanResults = (): { results: readonly UserNode[]; timestamp: number } | null => {
   try {
-    const raw = localStorage.getItem(LAST_SCAN_RESULTS_STORAGE_KEY);
-    const time = localStorage.getItem(LAST_SCAN_TIMESTAMP_STORAGE_KEY);
+    let raw = localStorage.getItem(lastScanStorageKey());
+    let time = localStorage.getItem(lastScanTimeStorageKey());
+    if ((!raw || !time) && useLegacyInstagramStorageFallback()) {
+      raw = raw ?? localStorage.getItem(LEGACY_INSTAGRAM_LAST_SCAN_KEY);
+      time = time ?? localStorage.getItem(LEGACY_INSTAGRAM_LAST_SCAN_TIME_KEY);
+    }
     if (!raw || !time) {
       return null;
     }

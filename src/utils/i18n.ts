@@ -3,7 +3,7 @@ const messages = {
   localAccountAudit: "Auditoria local da conta",
   launchTitle: "Encontre quem você segue mas não te segue de volta.",
   launchDescription:
-    "Escaneie seus seguidos no Instagram, revise sinais de risco, proteja contas na lista branca e aja apenas sobre os usuários selecionados.",
+    "Escaneie quem você segue, revise sinais de risco, proteja contas na lista branca e aja apenas sobre os usuários selecionados (Instagram ou X).",
   runScan: "Iniciar escaneamento",
   runsInBrowserOnly: "Executa somente nesta sessão do navegador",
   loadCachedScan: "Carregar escaneo anterior (%s contas)",
@@ -126,6 +126,8 @@ const messages = {
 
   // Host guard & misc
   hostGuardInstagramOnly: "Só pode ser usado nas rotas do Instagram.",
+  hostGuardXOnly: "Só pode ser usado nas rotas do X.com.",
+  hostGuardUnsupported: "Abra instagram.com ou x.com, faça login e cole o script na console.",
   filterChangeClearsSelection: "Alterar os filtros vai limpar a seleção atual. Continuar?",
   documentTitle: "Social Unfollowers — Instagram",
 } as const;

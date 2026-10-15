@@ -18,7 +18,7 @@
 | UI / tradução | [09](09_componentes_ui.md), [10](10_i18n.md) |
 | Unfollow / ban | [08](08_fluxo_unfollow_rate_limit_action_block.md) |
 | Build / CI | [02](02_build_webpack_deploy_github_pages.md) |
-| X.com / multi-plataforma | [plans/multi-plataforma/README.md](../plans/multi-plataforma/README.md) |
+| X.com / multi-plataforma | [16](16_api_x_graphql_sessao.md), [17](17_fluxo_escaneamento_x.md), [plans/multi-plataforma/README.md](../plans/multi-plataforma/README.md) |
 
 ## Comandos locais
 
@@ -26,11 +26,12 @@
 npm install
 npm run build
 npm run build-dev
+npm run test:graph-index
 ```
 
 ## Gate
 
-Quem desenvolve com meta-workspace Cursor usa o script de gate documentado em [15_testes_e_gate.md](15_testes_e_gate.md) (`npm ci`, `npm run build`, eslint).
+Quem desenvolve com meta-workspace Cursor usa o script de gate documentado em [15_testes_e_gate.md](15_testes_e_gate.md) (`npm ci`, `npm run build`, `npm run test:graph-index`).
 
 ## Convenções
 

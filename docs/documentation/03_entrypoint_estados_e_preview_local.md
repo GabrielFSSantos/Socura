@@ -3,21 +3,23 @@
 ## Bootstrap (`main.tsx` final)
 
 ```text
-if hostname !== www.instagram.com && !isLocalPreview → alert e aborta
-else → document.body.innerHTML = "" → render(<App />, document.body)
+resolveAdapter(hostname, isLocalPreview, previewPlatform)
+  → null: alert(hostGuardUnsupported)
+  → adapter: setActiveAdapter → document.title → render(<App />)
 ```
 
-`isLocalPreview` usa `LOCAL_PREVIEW_HOSTS`: `localhost`, `127.0.0.1`, `::1`.
+Hosts de produção: `www.instagram.com` (Instagram), `x.com` / `twitter.com` / variantes (X). Preview: `localhost`, `127.0.0.1`, `::1` com adapter mock (`?platform=x` para UI X).
 
 ## Componente `App`
 
 Orquestra:
 
 - `state: State` — máquina de estados da UI
-- `timings` — persistidos via `saveTimings` / `loadTimings`
-- `cachedScan` — último scan completo em cache
-- `lang` — EN ou ES
+- `timings` — defaults do adapter + `loadTimings()`
+- `cachedScan` — último scan em cache
 - `scanningPaused` + `scanningPausedRef` — pausa cooperativa durante scan
+
+Scan e unfollow reais delegam a `runAccountScan` / `runUnfollowQueue` com `getActiveAdapter()`.
 
 ## Estados (`model/state.ts`)
 
@@ -35,7 +37,7 @@ Campos relevantes em `scanning`: `results`, `whitelistedResults`, `selectedResul
 - `scanning` → `Searching`
 - `unfollowing` → `Unfollowing`
 
-`Toolbar` envolve todas as telas (idioma, settings, whitelist, ações globais).
+`Toolbar` envolve todas as telas (`networkLabel` do adapter, settings, whitelist).
 
 ## `isActiveProcess`
 
@@ -46,6 +48,7 @@ Usado para `beforeunload`: alerta se o usuário fecha a aba durante scan ativo o
 - `onScan` com `isLocalPreview` preenche `_getPreviewUsers()` sem API.
 - `useEffect` de scan e unfollow retornam cedo quando `isLocalPreview`.
 - Query `?preview=scanning` inicializa estado `scanning` com dados mock.
+- `?platform=x` seleciona `previewXAdapter`.
 
 ## Débito conhecido
 

@@ -12,5 +12,7 @@
 | D-008 | — | Harness do agente fora do repo de produto | Meta-workspace dedicado; repo sem paths de harness externo | `AGENTS.md` na raiz do fork |
 | D-009 | 2026 | UI e documentação em **PT-BR**; código e identificadores em **inglês** | Fork orientado a usuários e devs BR; manter alinhamento com convenções de código | i18n multilíngue (EN/ES); README bilíngue upstream |
 | D-010 | 2026 | Produto canônico em **GabrielFSSantos/Social-Unfollowers** e Pages próprio | Independência de distribuição; fork com créditos explícitos | Continuar apontando Pages upstream; repo novo sem rede de fork |
+| D-011 | 2026 | X.com MVP via **REST 1.1 interno** (`/i/api/1.1/`) com sessão web | Contrato mais estável que GraphQL com queryId volátil | Só GraphQL; API oficial paga |
+| D-012 | 2026 | `localStorage` com prefixo `iu_ig_` / `iu_x_`; fallback `iu_*` só no Instagram | Evita colisão conceitual; migração suave IG | Prefixo único global |
 
 Ao registrar nova decisão, acrescente uma linha e, se necessário, atualize o capítulo correspondente em `documentation/`.

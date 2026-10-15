@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Unfollowers — preview X</title>
+  </head>
+  <body>
+    <script>
+      if (!location.search.includes("platform=x")) {
+        const q = location.search ? `${location.search}&platform=x` : "?platform=x";
+        location.replace(`${location.pathname}${q}`);
+      }
+    </script>
+    <script src="../dist/dist.js"></script>
+  </body>
+</html>

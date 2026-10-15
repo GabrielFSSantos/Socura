@@ -3,7 +3,7 @@
 [![Maintenance](https://img.shields.io/maintenance/yes/2026)](https://github.com/GabrielFSSantos/Social-Unfollowers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Ferramenta para descobrir **quem você segue no Instagram mas não te segue de volta**. Funciona **no navegador**, colando um script na console — sem instalar extensões nem enviar dados a servidores externos.
+Ferramenta para descobrir **quem você segue mas não te segue de volta** no **Instagram** ou no **X.com**. Funciona **no navegador**, colando um script na console — sem instalar extensões nem enviar dados a servidores externos.
 
 > **Transmissão ao vivo e cache:** as contas aparecem na tela em tempo real conforme cada lote é buscado. Escaneamentos concluídos ficam em cache local para reabrir a auditoria na hora, sem repetir chamadas desnecessárias à API.
 
@@ -12,7 +12,7 @@ Ferramenta para descobrir **quem você segue no Instagram mas não te segue de v
 1. Abra a página do script: [Social Unfollowers no GitHub Pages](https://gabrielfssantos.github.io/Social-Unfollowers/) (desenvolvedores: após `npm run build`, use o bundle em `public/index.html`).
 2. Copie o código com o botão **Copiar código**.
    <br/><img src="./assets/copy_code.png" alt="Botão copiar código" />
-3. Acesse [instagram.com](https://www.instagram.com), faça login.
+3. Acesse [instagram.com](https://www.instagram.com) ou [x.com](https://x.com), faça login.
 4. Abra o console do desenvolvedor:
    - Windows / Linux: `Ctrl + Shift + J`
    - macOS: `⌘ + ⌥ + I`
@@ -26,6 +26,8 @@ Ferramenta para descobrir **quem você segue no Instagram mas não te segue de v
    <br/><img src="./assets/settings_whitelist.png" alt="Lista branca nas configurações" />
    <br/><img src="./assets/settings.png" alt="Configurações" />
 10. Marque os usuários desejados e use **Deixar de seguir** quando o escaneamento terminar.
+
+O **mesmo** script detecta a rede pelo site aberto (`instagram.com` vs `x.com`). No X, o fluxo é equivalente (scan, lista branca, unfollow em fila). Detalhes: [docs/documentation/17_fluxo_escaneamento_x.md](docs/documentation/17_fluxo_escaneamento_x.md).
 
 ## Uso no celular (Android)
 
@@ -58,7 +60,8 @@ Guia completo do código, fluxos, API Instagram, build e gate:
 - `npm install`
 - `npm run build` — gera `dist/dist.js`
 - `npm run build-dev` — watch com recarga
-- Preview local (sem Instagram): após o build, abra `public/preview.html`
+- Preview local: `public/preview.html` (Instagram) ou `public/preview-x.html` (X)
+- `npm run test:graph-index` — teste unitário do índice de seguidores
 
 O workflow de CI atualiza o bundle embutido em `public/index.html`. Evite editar o bloco do script manualmente; textos da landing (fora do bundle) podem ser ajustados conforme [`docs/documentation/02_build_webpack_deploy_github_pages.md`](docs/documentation/02_build_webpack_deploy_github_pages.md).
 
@@ -68,7 +71,7 @@ Este projeto é um **fork independente** derivado de [InstagramUnfollowers](http
 
 ## Legal
 
-**Aviso:** esta ferramenta **não** é afiliada, associada ou endossada pelo Instagram/Meta.
+**Aviso:** esta ferramenta **não** é afiliada ao Instagram/Meta nem ao X Corp.
 
 **Use por sua conta e risco.** Automatizar ações pode violar os Termos de Uso da plataforma.
 
