@@ -63,9 +63,10 @@ Guia completo do código, fluxos, API Instagram, build e gate:
 
 - Node 16+ / 18+ / 20+
 - `npm install`
-- `npm run build` — gera `dist/dist.js`
-- `npm run build-dev` — watch com recarga
-- Preview local: `public/preview.html` (Instagram) ou `public/preview-x.html` (X)
+- **`npm run serve`** — sobe o lab em **http://127.0.0.1:8765** (build automático se faltar `dist/dist.js`)
+- `npm run serve:build` — força rebuild antes de servir
+- `npm run build` — gera `dist/dist.js` + atualiza `public/index.html`
+- `npm run build-dev` — webpack dev server (avançado)
 - `npm run test:unit` — testes unitários (índice + parser X)
 - `npm run e2e:record` — gravar sessão X (uma vez) → `e2e/.auth/storage-state.json`
 - `npm run e2e:live` — smoke no preview; scan real no X se a sessão existir

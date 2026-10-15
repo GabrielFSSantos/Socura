@@ -18,15 +18,25 @@ npm run e2e:live -- --grep preview   # smoke UI (após build + playwright instal
 npm run e2e:record         # uma vez: login no X → e2e/.auth/storage-state.json
 ```
 
+## Lab local (um comando)
+
+```bash
+npm run serve
+```
+
+Abra **http://127.0.0.1:8765/** — hub com links para preview Instagram/X e página para copiar o script.
+
+Porta alternativa: `LAB_PORT=9000 npm run serve`.
+
 ## Preview sem rede social
 
-O app aceita `localhost`, `127.0.0.1` e `::1` como hosts de preview (`isLocalPreview` em `src/main.tsx`).
+Hosts de preview: `localhost`, `127.0.0.1`, `::1` (`isLocalPreview` em `src/main.tsx`).
 
-1. Execute `npm run build`.
-2. Abra `public/preview.html` (Instagram) ou `public/preview-x.html` / `?platform=x` (X).
-3. Opcional: `?preview=scanning` inicia direto na tela de resultados com dados fictícios.
+- `/preview.html` — Instagram mock  
+- `/preview-x.html` — X mock  
+- `?preview=scanning` — resultados fictícios já carregados  
 
-No preview, scan e unfollow **não** chamam APIs reais.
+Scan e unfollow no preview **não** chamam APIs reais.
 
 ## Uso em produção (Instagram ou X)
 

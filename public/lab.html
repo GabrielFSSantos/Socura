@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Unfollowers — lab local</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    h1 { font-size: 1.35rem; }
+    a.card { display: block; padding: 1rem; margin: 0.75rem 0; border: 1px solid #ccc; border-radius: 8px; text-decoration: none; color: inherit; }
+    a.card:hover { border-color: #333; background: #f8f8f8; }
+    a.card strong { display: block; margin-bottom: 0.25rem; }
+    .muted { color: #555; font-size: 0.9rem; }
+    code { background: #eee; padding: 0.1em 0.35em; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Social Unfollowers — lab local</h1>
+  <p class="muted">Servidor: <code>npm run serve</code> · porta padrão <code>8765</code></p>
+
+  <a class="card" href="/preview.html">
+    <strong>Preview Instagram</strong>
+    <span class="muted">UI com dados fictícios — sem login no Instagram.</span>
+  </a>
+
+  <a class="card" href="/preview-x.html">
+    <strong>Preview X</strong>
+    <span class="muted">Mesma UI, rede X simulada (<code>?platform=x</code>).</span>
+  </a>
+
+  <a class="card" href="/preview.html?preview=scanning">
+    <strong>Preview — tela de resultados</strong>
+    <span class="muted">Atalho com lista mock já carregada.</span>
+  </a>
+
+  <a class="card" href="/index.html">
+    <strong>Script para colar (instagram.com / x.com)</strong>
+    <span class="muted">Copie o bundle e cole na console do site real, logado. No Chrome: digite <code>allow pasting</code> antes de colar.</span>
+  </a>
+
+  <p class="muted">API real só funciona em <code>www.instagram.com</code> ou <code>x.com</code>, não neste localhost.</p>
+</body>
+</html>

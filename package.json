@@ -15,7 +15,9 @@
     "test:unit": "npm run test:graph-index && npm run test:x-list-parse",
     "e2e:record": "playwright open https://x.com --save-storage=e2e/.auth/storage-state.json",
     "e2e:live": "playwright test",
-    "screenshots:readme": "node scripts/capture-readme-screenshots.mjs"
+    "screenshots:readme": "node scripts/capture-readme-screenshots.mjs",
+    "serve": "node scripts/serve-lab.mjs",
+    "serve:build": "npm run build && npm run serve"
   },
   "babel": {
     "plugins": [
