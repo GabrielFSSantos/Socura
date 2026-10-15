@@ -14,7 +14,9 @@ Escolha o modo na tela inicial antes de **Iniciar escaneamento**.
 
 ## Fluxo do usuário
 
-1. Copie o script em [GitHub Pages](https://gabrielfssantos.github.io/Socura/) ou use `npm run dev`.
+Como obter o script (Pages, clone local ou celular): **[README na raiz do repositório](../README.md#como-obter-o-script)**.
+
+1. Copie o bundle (Pages ou lab local após `npm run dev`).
 2. Cole no console em `instagram.com` ou `x.com` (após login).
 3. Escolha o modo, inicie o scan e aguarde a lista.
 4. Use a **lista branca** para proteger contas.

@@ -12,12 +12,14 @@ module.exports = {
             {
                 test: /\.s[ac]ss$/i,
                 use: [
-                    // Creates `style` nodes from JS strings
                     'style-loader',
-                    // Translates CSS into CommonJS
                     'css-loader',
-                    // Compiles Sass to CSS
-                    'sass-loader',
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            api: 'modern-compiler',
+                        },
+                    },
                 ],
             },
         ],
@@ -32,13 +34,5 @@ module.exports = {
     output: {
         filename: 'dist.js',
         path: path.resolve(__dirname, 'dist'),
-    },
-    devServer: {
-        client: {
-            overlay: {
-                errors: true,
-                warnings: false,
-            },
-        },
     },
 };
